@@ -36,7 +36,7 @@ export function Login() {
     } catch { setMessage('Não foi possível conectar. Tente novamente.'); }
     finally { setBusy(false); }
   }
-  if (!loading && session && location.pathname === '/entrar') return <Navigate to="/conta" replace />;
+  if (!loading && session && location.pathname === '/entrar') return <Navigate to="/demo/dashboard" replace />;
 
   return <IonPage><IonContent><div className="gourmet login-screen">
     <header className="login-header"><Link to="/" aria-label="Estouro de Delícias, início"><Brand /></Link><Link className="login-back" to="/">← Voltar ao site</Link></header>

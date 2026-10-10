@@ -1,0 +1,4 @@
+# A função valida o Bearer JWT no Supabase Auth e consulta is_admin no banco.
+# Não depender da verificação legada do gateway (incompatível com algumas signing keys).
+[functions.invite-user]
+verify_jwt = false

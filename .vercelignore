@@ -1,0 +1,11 @@
+.git
+.agents
+.codex
+.aws
+.env
+.env.*
+node_modules
+dist
+supabase
+android
+ios

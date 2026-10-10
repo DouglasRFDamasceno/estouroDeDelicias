@@ -66,7 +66,7 @@
 button.g-button{border:0;cursor:pointer;font-family:inherit}
 .g-catalog-preview{display:flex;align-items:center;justify-content:center;position:relative;padding:35px 0 50px;min-width:0}
 .g-mini-flavor{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;width:135px;height:175px;flex-shrink:0;border:5px solid white;border-radius:20px;background:var(--flavor-bg);color:var(--flavor-ink);box-shadow:0 15px 30px #75264a15;transform:rotate(-12deg)}
-.g-mini-flavor span{font-size:38px}.g-mini-flavor strong{font:italic 26px Georgia,serif}
+.g-mini-flavor span{font-size:38px}.g-mini-flavor strong{font:italic 26px Georgia,serif;max-width:100%;padding-inline:4px;text-align:center;overflow-wrap:anywhere}
 .g-mini-flavor:nth-child(2){transform:translateY(-20px);z-index:1;margin:0 -15px}
 .g-mini-flavor:nth-child(3){transform:rotate(12deg)}
 .g-catalog-count{position:absolute;bottom:0;font-size:11px;color:#8a7287}
@@ -79,7 +79,7 @@ button.g-button{border:0;cursor:pointer;font-family:inherit}
 .g-catalog-modal .g-flavor-body a{margin-top:12px}
 .g-catalog-modal .g-flavor-art{height:135px}
 .g-catalog-modal .g-flavor-body{padding:15px}
-@media(max-width:700px){.g-catalog-invite{grid-template-columns:1fr;gap:35px}.g-catalog-preview{padding-top:20px}.g-mini-flavor{width:105px;height:145px}.g-mini-flavor strong{font-size:23px}.g-catalog-modal{--width:100%;--height:100%;--border-radius:0}.g-catalog-modal ion-toolbar{padding-top:env(safe-area-inset-top)}.g-catalog-modal ion-title{font-size:14px;padding-inline:16px}.g-catalog-controls{padding:10px 16px 15px;flex-direction:column;align-items:stretch;gap:10px}.g-catalog-controls .g-size-picker>div{max-width:none}.g-catalog-body{padding:18px 14px calc(24px + env(safe-area-inset-bottom))}.g-catalog-modal .g-flavor-art{height:125px}.g-catalog-modal .g-flavor-body{padding:12px}.g-catalog-modal .g-art-word{font-size:22px}}
+@media(max-width:700px){.g-catalog-invite{grid-template-columns:1fr;gap:35px}.g-catalog-preview{padding-top:20px}.g-mini-flavor{width:105px;height:145px}.g-mini-flavor strong{font-size:20px}.g-catalog-modal{--width:100%;--height:100%;--border-radius:0}.g-catalog-modal ion-toolbar{padding-top:env(safe-area-inset-top)}.g-catalog-modal ion-title{font-size:14px;padding-inline:16px}.g-catalog-controls{padding:10px 16px 15px;flex-direction:column;align-items:stretch;gap:10px}.g-catalog-controls .g-size-picker>div{max-width:none}.g-catalog-body{padding:18px 14px calc(24px + env(safe-area-inset-bottom))}.g-catalog-modal .g-flavor-art{height:125px}.g-catalog-modal .g-flavor-body{padding:12px}.g-catalog-modal .g-art-word{font-size:22px}}
 
 /* Botão HTML isolado dos estilos internos dos componentes Ionic. */
 .g-catalog-modal button.g-catalog-close{appearance:none;display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;margin:4px 14px 4px 4px;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;color:#dc143c;cursor:pointer;font:400 34px/1 Arial,sans-serif}
@@ -111,6 +111,7 @@ button.g-button{border:0;cursor:pointer;font-family:inherit}
   .g-header .g-button.compact{font-size:10px;padding:11px 12px;gap:8px}
   .g-catalog-preview{max-width:100%}
   .g-mini-flavor{width:90px;height:135px}
+  .g-mini-flavor strong{font-size:18px}
   .g-catalog-modal ion-title{font-size:13px;white-space:normal;line-height:1.35}
   .g-catalog-close{flex-shrink:0}
 }

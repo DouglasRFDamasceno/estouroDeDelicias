@@ -7,6 +7,9 @@ import {
   orderSubtotal,
 } from '../domain/landingCatalog';
 import type { LandingOrderItem } from '../domain/landingCatalog';
+import { cleanOrderCustomer, validateOrder } from '../domain/publicOrder';
+import { submitPublicOrder } from '../services/publicOrders';
+import { OrderChallenge } from './OrderChallenge';
 import { money } from '../domain/format';
 
 const normalize = (value: string) =>
@@ -22,6 +25,49 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const [favorites, setFavorites] = useState<string[]>([]);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [items, setItems] = useState<LandingOrderItem[]>([]);
+  const [customerName, setCustomerName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const requireChallenge = import.meta.env.VITE_ORDER_REQUIRE_TURNSTILE === 'true';
+  const [challengeToken, setChallengeToken] = useState('');
+  const [challengeVersion, setChallengeVersion] = useState(0);
+  const [prepared, setPrepared] = useState<{
+    fingerprint: string;
+    reference: number;
+    message: string;
+  } | null>(null);
+  const submission = useRef<{ fingerprint: string; requestId: string } | null>(null);
+  const fingerprint = JSON.stringify({ customer: customerName.trim(), items });
+  const currentPrepared = prepared?.fingerprint === fingerprint ? prepared : null;
+  async function prepareOrder() {
+    if (submitting || (requireChallenge && !challengeToken)) return;
+    setSubmitError('');
+    setSubmitting(true);
+    try {
+      const order = validateOrder({ customer: customerName, items });
+      if (submission.current?.fingerprint !== fingerprint)
+        submission.current = { fingerprint, requestId: crypto.randomUUID() };
+      const saved = await submitPublicOrder(order, submission.current.requestId, challengeToken);
+      setPrepared({
+        fingerprint,
+        reference: saved.reference,
+        message: [
+          `Olá! Meu nome é ${order.customer}. Pedido #${saved.reference}.`,
+          ...orderMessage(order.items, saved.total_cents).split('\n').slice(1),
+        ].join('\n'),
+      });
+    } catch (issue) {
+      setSubmitError(
+        issue instanceof Error
+          ? issue.message
+          : 'Não recebemos a confirmação. Tente novamente com o mesmo pedido.',
+      );
+    } finally {
+      setSubmitting(false);
+      setChallengeToken('');
+      setChallengeVersion((value) => value + 1);
+    }
+  }
   const [announcement, setAnnouncement] = useState('');
   const visibleFlavors = landingFlavors.filter(
     (flavor) =>
@@ -61,6 +107,7 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
       className="g-catalog-modal modern-catalog"
       isOpen={isOpen}
       onDidDismiss={onClose}
+      canDismiss={!submitting}
       aria-labelledby="catalog-title"
     >
       <IonHeader>
@@ -71,6 +118,7 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
               type="button"
               className="g-catalog-close"
               onClick={onClose}
+              disabled={submitting}
               aria-label="Fechar catálogo"
             >
               ×
@@ -107,6 +155,7 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
                   <button
                     key={grams}
                     type="button"
+                    disabled={submitting}
                     aria-pressed={size === index}
                     onClick={() => setSize(index)}
                   >
@@ -152,12 +201,15 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
                         type="button"
                         className="landing-add"
                         onClick={() => add(flavor.name)}
-                        disabled={items.some(
-                          (item) =>
-                            item.flavor === flavor.name &&
-                            item.size === packageSizes[size] &&
-                            item.quantity >= 99,
-                        )}
+                        disabled={
+                          submitting ||
+                          items.some(
+                            (item) =>
+                              item.flavor === flavor.name &&
+                              item.size === packageSizes[size] &&
+                              item.quantity >= 99,
+                          )
+                        }
                       >
                         Adicionar <span aria-hidden="true">+</span>
                       </button>
@@ -247,6 +299,7 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
                       <div className="landing-quantity">
                         <button
                           type="button"
+                          disabled={submitting}
                           aria-label={`Diminuir quantidade de ${item.flavor}, ${item.size} g`}
                           onClick={() => changeQuantity(item, -1)}
                         >
@@ -255,7 +308,7 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
                         <span aria-label={`${item.quantity} unidades`}>{item.quantity}</span>
                         <button
                           type="button"
-                          disabled={item.quantity >= 99}
+                          disabled={submitting || item.quantity >= 99}
                           aria-label={`Aumentar quantidade de ${item.flavor}, ${item.size} g`}
                           onClick={() => changeQuantity(item, 1)}
                         >
@@ -272,17 +325,72 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 <p className="landing-order-disclaimer">
                   Frete não incluído. Esta seleção não reserva produtos nem confirma a compra.
                 </p>
-                <a
-                  className="g-button"
-                  href={`https://wa.me/5531984277738?text=${encodeURIComponent(orderMessage(items))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Combinar pelo WhatsApp ↗
-                </a>
+                <label className="landing-search">
+                  <span>Seu nome</span>
+                  <input
+                    disabled={submitting}
+                    autoComplete="name"
+                    maxLength={120}
+                    value={customerName}
+                    onChange={(event) => setCustomerName(cleanOrderCustomer(event.target.value))}
+                    placeholder="Como podemos chamar você?"
+                  />
+                </label>
+                <p className="landing-order-disclaimer">
+                  Seu nome e os itens ficam disponíveis para nossa equipe por até 7 dias para
+                  confirmar seu pedido. A compra só é confirmada na conversa.
+                </p>
+                {currentPrepared ? (
+                  <>
+                    <p role="status">
+                      Pedido #{currentPrepared.reference} preparado. Envie a mensagem pelo WhatsApp
+                      para combinar os detalhes.
+                    </p>
+                    <a
+                      className="g-button"
+                      href={`https://wa.me/5531984277738?text=${encodeURIComponent(currentPrepared.message)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Enviar pelo WhatsApp ↗
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    {requireChallenge && (
+                      <OrderChallenge key={challengeVersion} onToken={setChallengeToken} />
+                    )}
+                    <button
+                      type="button"
+                      className="g-button"
+                      onClick={prepareOrder}
+                      disabled={
+                        submitting ||
+                        (requireChallenge && !challengeToken) ||
+                        customerName.trim().length < 2
+                      }
+                    >
+                      {submitting ? 'Preparando pedido…' : 'Preparar pedido para WhatsApp'}
+                    </button>
+                  </>
+                )}
+                {submitError && <p role="alert">{submitError}</p>}
+                {!currentPrepared && (
+                  <a
+                    className="landing-clear"
+                    href={`https://wa.me/5531984277738?text=${encodeURIComponent(
+                      `${customerName.trim() ? `Meu nome é ${customerName.trim()}.\n` : ''}${orderMessage(items)}`,
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Combinar diretamente pelo WhatsApp
+                  </a>
+                )}
                 <button
                   type="button"
                   className="landing-clear"
+                  disabled={submitting}
                   onClick={() => {
                     setItems([]);
                     setAnnouncement('Seleção limpa.');

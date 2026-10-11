@@ -11,12 +11,12 @@
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --experimental-strip-types --test src/domain/*.test.ts",
+    "test": "node --experimental-strip-types --test src/domain/*.test.ts server/*.test.ts",
     "cap:sync": "npm run build && cap sync",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "npm run lint -- --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"supabase/functions/**/*.ts\" \"*.{js,ts,json,html}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"supabase/functions/**/*.ts\" \"*.{js,ts,json,html}\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"supabase/functions/**/*.ts\" \"api/**/*.ts\" \"server/**/*.ts\" \"*.{js,ts,json,html}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"supabase/functions/**/*.ts\" \"api/**/*.ts\" \"server/**/*.ts\" \"*.{js,ts,json,html}\"",
     "check": "npm run lint && npm run format:check && npm test && npm run build"
   },
   "dependencies": {

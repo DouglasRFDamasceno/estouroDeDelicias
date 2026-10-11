@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { PendingOrders } from './PendingOrders';
+import type { PendingOrder } from '../services/pendingOrders';
 import { useAuth } from '../auth/AuthProvider';
 import { requireSupabase } from '../services/supabase';
 import { SearchSelect } from './SearchSelect';
@@ -31,6 +33,9 @@ export function Sales() {
   const { identity, identityLoading } = useAuth();
   const [editing, setEditing] = useState<Sale | null>(null),
     [removing, setRemoving] = useState<Sale | null>(null);
+  const [pending, setPending] = useState<{ order: PendingOrder; items: DraftSaleItem[] } | null>(
+    null,
+  );
   const [open, setOpen] = useState(false),
     [revision, setRevision] = useState(0);
   const [page, setPage] = useState(1),
@@ -89,6 +94,23 @@ export function Sales() {
     );
   return (
     <section className="panel sales-panel">
+      <PendingOrders
+        revision={revision}
+        onReview={(order, items) => setPending({ order, items })}
+      />
+      {pending && (
+        <SaleModal
+          pendingOrder={pending.order}
+          initialItems={pending.items}
+          onClose={() => setPending(null)}
+          onSaved={() => {
+            setPending(null);
+            setRevision((value) => value + 1);
+            setPage(1);
+          }}
+        />
+      )}
+
       <div className="panel-heading">
         <div>
           <h2>Vendas registradas</h2>
@@ -244,11 +266,13 @@ type DraftSaleItem = CatalogProduct & { quantity: number; sale_item_id?: string 
 function SaleModal({
   sale,
   initialItems = [],
+  pendingOrder,
   onClose,
   onSaved,
 }: {
   sale?: Sale;
   initialItems?: DraftSaleItem[];
+  pendingOrder?: PendingOrder;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -265,7 +289,10 @@ function SaleModal({
       ((sale?.received_cents ?? 0) / 100).toFixed(2).replace('.', ','),
     ),
     [method, setMethod] = useState(sale?.payment_method ?? 'pending'),
-    [notes, setNotes] = useState(sale?.notes ?? '');
+    [notes, setNotes] = useState(
+      sale?.notes ?? (pendingOrder ? `Pedido #${pendingOrder.reference}` : ''),
+    );
+  const [orderCustomer, setOrderCustomer] = useState(pendingOrder?.customer ?? '');
   const [items, setItems] = useState<DraftSaleItem[]>(initialItems);
   const payload = useRef<Record<string, unknown> | null>(null);
   useEffect(() => {
@@ -275,15 +302,19 @@ function SaleModal({
   const previousAmount = useRef(amount);
   useEffect(() => {
     if (previousAmount.current !== amount) {
-      setReceived((amount / 100).toFixed(2).replace('.', ','));
+      setReceived(method === 'pending' ? '0,00' : (amount / 100).toFixed(2).replace('.', ','));
       previousAmount.current = amount;
     }
-  }, [amount]);
+  }, [amount, method]);
   async function save(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
     setError('');
     if (!payload.current) {
+      if (pendingOrder && !customer && orderCustomer.trim().length < 2) {
+        setError('Confira o nome do cliente.');
+        return;
+      }
       if (
         !items.length ||
         items.some((p) => !Number.isInteger(p.quantity) || p.quantity < 1 || p.quantity > 999)
@@ -304,7 +335,9 @@ function SaleModal({
       payload.current = {
         p_request_id: requestId.current,
         p_customer:
-          customer?.label ?? (sale?.customer_id === null ? sale.customer : 'Consumidor final'),
+          customer?.label ??
+          (orderCustomer.trim() ||
+            (sale?.customer_id === null ? sale.customer : 'Consumidor final')),
         p_customer_id: customer?.id ?? null,
         p_sale_date: date,
         p_received_cents: cents,
@@ -322,10 +355,12 @@ function SaleModal({
     try {
       const result = await requireSupabase()
         .rpc(
-          sale ? 'update_sale' : 'create_sale',
+          sale ? 'update_sale' : pendingOrder ? 'confirm_pending_order' : 'create_sale',
           sale
             ? { ...payload.current, p_sale_id: sale.id, p_revision: sale.revision }
-            : payload.current,
+            : pendingOrder
+              ? { ...payload.current, p_order_id: pendingOrder.id }
+              : payload.current,
         )
         .abortSignal(AbortSignal.timeout(20000));
       if (result.error) {
@@ -370,13 +405,35 @@ function SaleModal({
         <div className="panel-heading">
           <div>
             <p className="eyebrow">GESTÃO DE VENDAS</p>
-            <h2 id="sale-title">{sale ? 'Editar venda' : 'Nova venda'}</h2>
+            <h2 id="sale-title">
+              {sale
+                ? 'Editar venda'
+                : pendingOrder
+                  ? `Registrar pedido #${pendingOrder.reference}`
+                  : 'Nova venda'}
+            </h2>
           </div>
           <button type="button" disabled={busy} onClick={onClose} aria-label="Fechar">
             ✕
           </button>
         </div>
         <fieldset disabled={busy || uncertain}>
+          {pendingOrder && (
+            <>
+              <p>Confira o combinado pelo WhatsApp. Os preços abaixo são os atuais do catálogo.</p>
+              <label>
+                Nome no pedido
+                <input
+                  required
+                  minLength={2}
+                  maxLength={120}
+                  value={orderCustomer}
+                  onChange={(event) => setOrderCustomer(event.target.value)}
+                />
+              </label>
+              <p>Se selecionar um cliente cadastrado, o nome desse cadastro será usado na venda.</p>
+            </>
+          )}
           <div className="sale-fields">
             <SearchSelect
               label="Cliente (opcional)"

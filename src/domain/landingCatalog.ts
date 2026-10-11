@@ -114,9 +114,9 @@ export function orderSubtotal(items: LandingOrderItem[]): number {
   return items.reduce((sum, item) => sum + orderItemPrice(item), 0);
 }
 
-export function orderMessage(items: LandingOrderItem[]): string {
+export function orderMessage(items: LandingOrderItem[], confirmedSubtotal?: number): string {
   if (!items.length) throw new Error('EMPTY_ORDER');
-  const subtotal = orderSubtotal(items);
+  const subtotal = confirmedSubtotal ?? orderSubtotal(items);
   const total = (subtotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   return [
     'Olá! Gostaria de consultar este pedido de pipocas gourmet:',

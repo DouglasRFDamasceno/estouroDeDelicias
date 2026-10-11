@@ -3937,3 +3937,28 @@ button.g-button {
     grid-template-columns: 1fr;
   }
 }
+
+.pending-orders {
+  padding-bottom: 28px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid #dfccd7;
+}
+.pending-order-list {
+  list-style: none;
+  padding: 0;
+}
+.pending-order-list > li {
+  padding: 18px;
+  margin-bottom: 12px;
+  border: 1px solid #dfccd7;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.pending-order-list h3 {
+  margin: 0 0 10px;
+}
+.pending-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

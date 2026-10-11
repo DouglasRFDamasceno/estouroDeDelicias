@@ -120,67 +120,69 @@ export function AuthCallback({
   return (
     <IonPage>
       <IonContent>
-        <main className="auth-single">
-          <section className="login-form-panel">
-            <h2>
-              {invitation
-                ? 'Defina sua senha'
-                : recovery
-                  ? 'Uma nova senha'
-                  : 'Confirmação de cadastro'}
-            </h2>
-            {loading || validatingInvite || validatingRecovery ? (
-              <p role="status">Validando o link…</p>
-            ) : done ? (
-              <>
-                <p role="status">Senha atualizada. Entre novamente.</p>
-                <Link to="/entrar">Ir para o login</Link>
-              </>
-            ) : failed || inviteError || recoveryError || !session ? (
-              <>
-                <p>
-                  Não foi possível validar este link. Ele pode ter expirado ou ter sido aberto em
-                  outro navegador. Solicite um novo link e abra o e-mail mais recente.
-                </p>
-                {recovery && <RecoveryRequest />}
-                <Link to="/entrar">Voltar ao login</Link>
-              </>
-            ) : !recovery && !invitation ? (
-              location.pathname === '/auth/callback' ? (
-                <Navigate to="/conta" replace />
-              ) : null
-            ) : (
-              <form className="login-form" onSubmit={update}>
-                <fieldset disabled={busy}>
-                  <label htmlFor="new-password">Nova senha</label>
-                  <input
-                    id="new-password"
-                    name="password"
-                    type="password"
-                    minLength={12}
-                    maxLength={128}
-                    required
-                    autoComplete="new-password"
-                  />
-                  <label htmlFor="confirm-new-password">Confirme a nova senha</label>
-                  <input
-                    id="confirm-new-password"
-                    name="confirmation"
-                    type="password"
-                    minLength={12}
-                    maxLength={128}
-                    required
-                    autoComplete="new-password"
-                  />
-                  <button className="g-button login-submit" type="submit">
-                    {busy ? 'Atualizando…' : 'Salvar nova senha'}
-                  </button>
-                  <p role="status">{message}</p>
-                </fieldset>
-              </form>
-            )}
-          </section>
-        </main>
+        <div className="gourmet login-screen">
+          <main className="auth-single">
+            <section className="login-form-panel">
+              <h2>
+                {invitation
+                  ? 'Defina sua senha'
+                  : recovery
+                    ? 'Uma nova senha'
+                    : 'Confirmação de cadastro'}
+              </h2>
+              {loading || validatingInvite || validatingRecovery ? (
+                <p role="status">Validando o link…</p>
+              ) : done ? (
+                <>
+                  <p role="status">Senha atualizada. Entre novamente.</p>
+                  <Link to="/entrar">Ir para o login</Link>
+                </>
+              ) : failed || inviteError || recoveryError || !session ? (
+                <>
+                  <p>
+                    Não foi possível validar este link. Ele pode ter expirado ou ter sido aberto em
+                    outro navegador. Solicite um novo link e abra o e-mail mais recente.
+                  </p>
+                  {recovery && <RecoveryRequest />}
+                  <Link to="/entrar">Voltar ao login</Link>
+                </>
+              ) : !recovery && !invitation ? (
+                location.pathname === '/auth/callback' ? (
+                  <Navigate to="/conta" replace />
+                ) : null
+              ) : (
+                <form className="login-form" onSubmit={update}>
+                  <fieldset disabled={busy}>
+                    <label htmlFor="new-password">Nova senha</label>
+                    <input
+                      id="new-password"
+                      name="password"
+                      type="password"
+                      minLength={12}
+                      maxLength={128}
+                      required
+                      autoComplete="new-password"
+                    />
+                    <label htmlFor="confirm-new-password">Confirme a nova senha</label>
+                    <input
+                      id="confirm-new-password"
+                      name="confirmation"
+                      type="password"
+                      minLength={12}
+                      maxLength={128}
+                      required
+                      autoComplete="new-password"
+                    />
+                    <button className="g-button login-submit" type="submit">
+                      {busy ? 'Atualizando…' : 'Salvar nova senha'}
+                    </button>
+                    <p role="status">{message}</p>
+                  </fieldset>
+                </form>
+              )}
+            </section>
+          </main>
+        </div>
       </IonContent>
     </IonPage>
   );

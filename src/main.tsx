@@ -7,6 +7,7 @@ import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
 import './styles.css';
 import { App } from './App';
+import './interface.css';
 setupIonicReact();
 // Uma página restaurada do back/forward cache deve reler a sessão atual.
 window.addEventListener('pageshow', (event) => {

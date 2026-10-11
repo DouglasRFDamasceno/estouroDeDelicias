@@ -28,3 +28,12 @@ Usando `https://SEU-DOMINIO` como exemplo:
 Abrir diretamente `/entrar`, `/conta` e `/auth/recovery`, recarregar e conferir ausência de 404. Testar login, logout, novo e-mail de recuperação, persistência do perfil e busca de CEP. Confirmar RLS e cadastro público desabilitado conforme `docs/admin.md` antes de usar contas reais.
 
 Referências: https://vercel.com/docs/frameworks/frontend/vite e https://vercel.com/docs/environment-variables.
+
+
+## Nome e domínio de produção
+
+Projeto: `estourodedelicias`. Endereço: `https://estourodedelicias.vercel.app`.
+
+No Supabase Auth → URL Configuration, usar essa origem como Site URL (sem barra final) e autorizar os callbacks exatos `/auth/invite`, `/auth/callback` e `/auth/recovery`. O template de convite usa SiteURL, e a aplicação usa `window.location.origin` para os callbacks de recuperação/confirmação. Não há domínio antigo fixo no frontend. Caso a Edge Function `invite-user` seja publicada, configurar seu segredo servidor `APP_ORIGIN=https://estourodedelicias.vercel.app`.
+
+A vinculação local da CLI mantém o mesmo projectId e orgId; somente projectName muda. O nome do pacote npm é independente do domínio e não precisa ser alterado.

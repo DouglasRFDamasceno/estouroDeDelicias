@@ -37,7 +37,7 @@ Antes de usar, fazer deploy da função e configurar o segredo servidor `APP_ORI
 
 ## Template e aceite de convite
 
-Em **Authentication → URL Configuration**, definir Site URL como `https://estouro-de-delicias.vercel.app` (sem barra final) e adicionar o redirect exato `https://estouro-de-delicias.vercel.app/auth/invite`. Acrescentar também os callbacks `/auth/callback` e `/auth/recovery` nessa mesma origem.
+Em **Authentication → URL Configuration**, definir Site URL como `https://estourodedelicias.vercel.app` (sem barra final) e adicionar o redirect exato `https://estourodedelicias.vercel.app/auth/invite`. Acrescentar também os callbacks `/auth/callback` e `/auth/recovery` nessa mesma origem.
 
 Em **Authentication → Email Templates → Invite user**, copiar `supabase/templates/invite.html`. O link usa SiteURL, para funcionar também com os convites feitos diretamente no painel, sem depender de redirectTo informado:
 

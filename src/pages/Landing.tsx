@@ -1,119 +1,18 @@
 import { useState } from 'react';
-import {
-  IonButtons,
-  IonContent,
-  IonHeader,
-  IonModal,
-  IonPage,
-  IonTitle,
-  IonToolbar,
-} from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { Link } from 'react-router-dom';
 import { Brand } from '../components/Brand';
 import { useAuth } from '../auth/AuthProvider';
-import { money } from '../domain/format';
-const flavors = [
-  {
-    name: 'Ninho',
-    note: 'Para os apaixonados por leite em pó.',
-    symbol: '♡',
-    color: 'vanilla',
-    prices: [900, 1600, 2200],
-  },
-  {
-    name: 'Oreo',
-    note: 'Seu biscoito favorito em um novo momento.',
-    symbol: '✦',
-    color: 'cookie',
-    prices: [900, 1600, 2200],
-  },
-  {
-    name: 'Morango',
-    note: 'Um toque de cor para adoçar o dia.',
-    symbol: '♥',
-    color: 'berry',
-    prices: [750, 1300, 1800],
-  },
-  {
-    name: 'Nutella',
-    note: 'Um encontro que é pura delícia.',
-    symbol: '✳',
-    color: 'chocolate',
-    prices: [900, 1600, 2200],
-  },
-  {
-    name: 'Maracujá',
-    note: 'Para quem gosta de sair do comum.',
-    symbol: '☀',
-    color: 'passion',
-    prices: [750, 1300, 1800],
-  },
-  {
-    name: 'Limão',
-    note: 'Uma escolha cheia de personalidade.',
-    symbol: '✷',
-    color: 'lime',
-    prices: [750, 1300, 1800],
-  },
-  {
-    name: 'Bom Bom',
-    note: 'Um carinho para adoçar seu momento.',
-    symbol: '♥',
-    color: 'berry',
-    prices: [900, 1600, 2200],
-  },
-  {
-    name: 'Paçoca',
-    note: 'Um sabor que combina com uma boa pausa.',
-    symbol: '✳',
-    color: 'passion',
-    prices: [900, 1600, 2200],
-  },
-  {
-    name: 'Choco Ninho',
-    note: 'Uma dupla para deixar o dia mais doce.',
-    symbol: '♡',
-    color: 'vanilla',
-    prices: [900, 1600, 2200],
-  },
-  {
-    name: 'Trufa de Chocolate',
-    note: 'Para quem sempre escolhe chocolate.',
-    symbol: '✦',
-    color: 'chocolate',
-    prices: [900, 1600, 2200],
-  },
-  {
-    name: 'Prestígio',
-    note: 'Mais uma delícia para compartilhar.',
-    symbol: '✷',
-    color: 'cookie',
-    prices: [900, 1600, 2200],
-  },
-  {
-    name: 'Ovomaltine',
-    note: 'Uma escolha para os seus momentos favoritos.',
-    symbol: '✳',
-    color: 'chocolate',
-    prices: [900, 1600, 2200],
-  },
-  {
-    name: 'Cravejado',
-    note: 'Um presente cheio de carinho.',
-    symbol: '✦',
-    color: 'passion',
-    prices: [900, 1600, 2200],
-  },
-];
+import { LandingCatalog } from '../components/LandingCatalog';
+import './landing.css';
 const whatsapp = (text: string) => `https://wa.me/5531984277738?text=${encodeURIComponent(text)}`;
 export function Landing() {
   const { session, loading } = useAuth();
-  const [size, setSize] = useState(0);
   const [catalogOpen, setCatalogOpen] = useState(false);
   return (
     <IonPage>
       <IonContent>
-        <div className="gourmet">
+        <div className="gourmet landing-modern">
           <header className="g-header">
             <Link to="/" aria-label="Estouro de Delícias, início">
               <Brand />
@@ -175,15 +74,20 @@ export function Landing() {
                 <span className="g-spark s-two" aria-hidden="true">
                   ✦
                 </span>
-                <div className="g-photo-frame g-photo-gift">
+                <div className="g-photo-frame g-photo-gift landing-hero-frame">
                   <img
-                    src="/images/pipocas-presente.jpeg"
-                    alt="Pipocas gourmet para presente, com laços roxos e a mensagem: pequenos gestos, grandes sorrisos"
+                    src="/images/pipocas-hero-960.webp"
+                    srcSet="/images/pipocas-hero-480.webp 480w, /images/pipocas-hero-960.webp 960w"
+                    sizes="(max-width: 700px) 90vw, (max-width: 1200px) 45vw, 540px"
+                    alt="Composição ilustrativa de dois cones de pipoca gourmet com laços roxos sobre um pedestal rosa"
                     fetchPriority="high"
-                    width="1079"
-                    height="1440"
+                    width="960"
+                    height="1280"
                   />
                 </div>
+                <p className="landing-image-caption">
+                  Composição ilustrativa criada com IA a partir dos nossos produtos.
+                </p>
                 <div className="g-love-stamp">
                   feito com
                   <br />
@@ -213,8 +117,8 @@ export function Landing() {
                   <span>estouro de hoje?</span>
                 </h2>
                 <p className="g-catalog-description">
-                  Dos clássicos aos seus novos favoritos. Abra nosso catálogo, escolha o tamanho e
-                  encontre a sua próxima delícia.
+                  Dos clássicos aos seus novos favoritos. Busque seu sabor, salve os favoritos e
+                  monte uma seleção do seu jeito. Depois, é só conversar com a gente pelo WhatsApp.
                 </p>
                 <button
                   type="button"
@@ -222,7 +126,7 @@ export function Landing() {
                   onClick={() => setCatalogOpen(true)}
                   aria-haspopup="dialog"
                 >
-                  Ver todos os sabores <span aria-hidden="true">↗</span>
+                  Explorar e montar meu pedido <span aria-hidden="true">↗</span>
                 </button>
               </div>
               <div className="g-catalog-preview" aria-hidden="true">
@@ -241,94 +145,7 @@ export function Landing() {
                 <span className="g-catalog-count">+10 sabores para descobrir</span>
               </div>
             </section>
-            <IonModal
-              className="g-catalog-modal"
-              isOpen={catalogOpen}
-              onDidDismiss={() => setCatalogOpen(false)}
-              aria-labelledby="catalog-title"
-            >
-              <IonHeader>
-                <IonToolbar>
-                  <IonTitle id="catalog-title">Escolha sua próxima delícia</IonTitle>
-                  <IonButtons slot="end">
-                    <button
-                      type="button"
-                      className="g-catalog-close"
-                      onClick={() => setCatalogOpen(false)}
-                      aria-label="Fechar catálogo"
-                      title="Fechar catálogo"
-                    >
-                      <span aria-hidden="true">×</span>
-                    </button>
-                  </IonButtons>
-                </IonToolbar>
-                <div className="g-catalog-controls">
-                  <span>13 sabores · escolha o tamanho</span>
-                  <div className="g-size-picker">
-                    <div role="group" aria-label="Tamanho da embalagem">
-                      {['50 g', '100 g', '150 g'].map((label, index) => (
-                        <button
-                          key={label}
-                          type="button"
-                          aria-pressed={size === index}
-                          onClick={() => setSize(index)}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </IonHeader>
-              <IonContent>
-                <div className="g-catalog-body">
-                  <div className="g-flavor-grid">
-                    {flavors.map((flavor) => (
-                      <article key={flavor.name} className={`g-flavor ${flavor.color}`}>
-                        <div className="g-flavor-art" aria-hidden="true">
-                          <span className="g-flavor-symbol">{flavor.symbol}</span>
-                          <span className="g-art-label">ESTOURO DE DELÍCIAS</span>
-                          <span className="g-art-word">{flavor.name}</span>
-                          <span className="g-art-size">
-                            GOURMET · {['50 g', '100 g', '150 g'][size]}
-                          </span>
-                        </div>
-                        <div className="g-flavor-body">
-                          <div>
-                            <h3>{flavor.name}</h3>
-                            <strong>{money(flavor.prices[size])}</strong>
-                          </div>
-                          <a
-                            href={whatsapp(
-                              `Olá! Tenho interesse na pipoca gourmet de ${flavor.name}, embalagem de ${[50, 100, 150][size]} g. Pode confirmar disponibilidade e como pedir?`,
-                            )}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`Pedir ${flavor.name} de ${[50, 100, 150][size]} gramas pelo WhatsApp`}
-                          >
-                            Quero esse sabor <span aria-hidden="true">↗</span>
-                          </a>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                  <div className="g-menu-link">
-                    <a
-                      className="g-underlined"
-                      href="/images/cardapio-gourmet.jpeg"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Abrir cardápio original ↗
-                    </a>
-                  </div>
-                  <p className="g-price-note">
-                    Preços conforme o cardápio fornecido. Confirme disponibilidade, entrega e valor
-                    final pelo WhatsApp. Os cartões são ilustrações gráficas dos sabores.
-                  </p>
-                </div>
-              </IonContent>
-            </IonModal>
+            <LandingCatalog isOpen={catalogOpen} onClose={() => setCatalogOpen(false)} />
             <section className="g-moments">
               <div>
                 <p className="g-kicker">NÃO É SÓ SOBRE PIPOCA</p>
@@ -366,6 +183,45 @@ export function Landing() {
                 ))}
               </div>
             </section>
+            <section className="landing-faq" aria-labelledby="faq-title">
+              <div>
+                <p className="g-kicker">ANTES DO PRIMEIRO ESTOURO</p>
+                <h2 id="faq-title">
+                  Pode perguntar.
+                  <br />
+                  <span>A gente te ajuda.</span>
+                </h2>
+                <p>Da escolha do sabor aos detalhes da entrega, combinamos tudo com você.</p>
+              </div>
+              <div className="landing-faq-list">
+                {[
+                  [
+                    'Como faço meu pedido?',
+                    'Abra o catálogo, escolha sabores, tamanhos e quantidades. Sua seleção vira uma mensagem no WhatsApp, onde confirmamos disponibilidade e valor final. O envio da mensagem não confirma a compra.',
+                  ],
+                  [
+                    'Quais tamanhos posso escolher?',
+                    'As embalagens do cardápio são de 50 g, 100 g e 150 g. Você pode combinar tamanhos diferentes na mesma seleção.',
+                  ],
+                  [
+                    'Como funcionam entrega e pagamento?',
+                    'Consulte pelo WhatsApp as opções para seu endereço, o frete, o prazo e as formas de pagamento antes de confirmar o pedido. O subtotal do catálogo não inclui entrega.',
+                  ],
+                  [
+                    'Posso pedir para presente? E sobre alergênicos?',
+                    'Fale com a gente sobre a ocasião e as opções de apresentação. Se você tem alergias ou restrições alimentares, consulte os ingredientes e as condições de preparo antes de pedir.',
+                  ],
+                ].map(([question, answer]) => (
+                  <details key={question}>
+                    <summary>
+                      {question}
+                      <span aria-hidden="true">+</span>
+                    </summary>
+                    <p>{answer}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
             <section className="g-contact">
               <span className="g-contact-star" aria-hidden="true">
                 ✳
@@ -387,6 +243,14 @@ export function Landing() {
               <p className="g-contact-phone">(31) 98427-7738</p>
             </section>
           </main>
+          <button
+            type="button"
+            className="landing-mobile-order"
+            onClick={() => setCatalogOpen(true)}
+            aria-haspopup="dialog"
+          >
+            <span aria-hidden="true">✳</span> Escolher sabores <span aria-hidden="true">↗</span>
+          </button>
           <footer className="g-footer">
             <Brand />
             <p>Feito com amor em cada estouro.</p>

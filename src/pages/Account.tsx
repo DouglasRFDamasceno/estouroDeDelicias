@@ -8,6 +8,7 @@ import { emptyProfile, normalizeProfile, profileFields, validateProfile } from '
 import { formatProfileInput } from '../domain/profileInput';
 import { fetchPostalAddress } from '../services/postalAddress';
 import { logoutCurrentSession } from '../services/logout';
+import { returnDestination } from '../domain/navigation';
 import type { Profile } from '../domain/profile';
 const labels: Record<keyof Profile, string> = {
   full_name: 'Nome completo',
@@ -198,12 +199,22 @@ export function Account() {
                 <p role="status">Verificando sessão…</p>
               ) : !session ? (
                 location.pathname === '/conta' ? (
-                  <Navigate to="/entrar" replace />
+                  <Navigate
+                    to={`/entrar?returnTo=${encodeURIComponent(location.pathname + location.search)}`}
+                    replace
+                  />
                 ) : null
               ) : (
                 <>
                   <div className="account-heading">
-                    <Link to="/">← Voltar ao site</Link>
+                    <Link
+                      to={returnDestination(
+                        new URLSearchParams(location.search).get('returnTo'),
+                        true,
+                      )}
+                    >
+                      ← Voltar à gestão
+                    </Link>
                     <button type="button" onClick={logout} disabled={busy}>
                       Sair
                     </button>

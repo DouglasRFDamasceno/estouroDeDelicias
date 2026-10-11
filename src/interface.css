@@ -392,3 +392,10 @@
     padding-top: 24px;
   }
 }
+
+.table-scroll-hint {
+  color: var(--ui-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 12px 0;
+}

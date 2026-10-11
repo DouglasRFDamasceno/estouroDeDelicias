@@ -250,8 +250,8 @@ export function Landing() {
             <p>Feito com amor em cada estouro.</p>
             <div>
               <Link to="/entrar">Entrar</Link>
-              <Link to="/criar-conta">Criar conta</Link>
-              <Link to="/demo/dashboard">Demonstração da gestão ↗</Link>
+              <Link to="/criar-conta">Acesso por convite</Link>
+              <Link to={session ? '/demo/dashboard' : '/entrar'}>Acessar a gestão ↗</Link>
             </div>
           </footer>
         </div>

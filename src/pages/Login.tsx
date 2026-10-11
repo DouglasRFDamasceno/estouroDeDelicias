@@ -5,6 +5,7 @@ import { authConfigured, authRedirect, requireSupabase } from '../services/supab
 import { useAuth } from '../auth/AuthProvider';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Brand } from '../components/Brand';
+import { returnDestination } from '../domain/navigation';
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -59,7 +60,12 @@ export function Login() {
     }
   }
   if (!loading && session && location.pathname === '/entrar')
-    return <Navigate to="/demo/dashboard" replace />;
+    return (
+      <Navigate
+        to={returnDestination(new URLSearchParams(location.search).get('returnTo'))}
+        replace
+      />
+    );
 
   return (
     <IonPage>
@@ -173,11 +179,11 @@ export function Login() {
                 </fieldset>
               </form>
               <p className="login-signup">
-                Ainda não tem conta? <Link to="/criar-conta">Criar conta</Link>
+                O acesso é por convite. <Link to="/criar-conta">Como obter acesso</Link>
               </p>
               <div className="login-demo-link">
-                <span>Quer conhecer primeiro?</span>
-                <Link to="/demo/dashboard">Explorar a demonstração ↗</Link>
+                <span>A gestão está disponível para contas autorizadas.</span>
+                <Link to="/">Conhecer nossos sabores ↗</Link>
               </div>
             </section>
           </main>

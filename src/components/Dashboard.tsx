@@ -70,7 +70,7 @@ export function Dashboard() {
           <p>
             Dos primeiros pedidos às próximas conquistas. Acompanhe o que faz sua marca crescer.
           </p>
-          <Link to="/demo/vendas" className="dashboard-intro-action">
+          <Link to="/demo/vendas?aba=vendas&acao=nova" className="dashboard-intro-action">
             Registrar uma venda <span aria-hidden="true">↗</span>
           </Link>
         </div>

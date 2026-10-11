@@ -1,7 +1,8 @@
 import { requireSupabase } from './supabase';
 import { pageRange } from '../domain/pagination';
 import type { CatalogProduct } from '../domain/catalog';
-export const productSortColumns = ['name', 'category', 'presentation', 'price_cents'] as const;
+import { productSortColumns } from '../domain/productQuery';
+export { productSortColumns } from '../domain/productQuery';
 export type ProductSort = (typeof productSortColumns)[number];
 export interface ProductFilters {
   name: string;

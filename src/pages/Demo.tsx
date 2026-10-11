@@ -14,7 +14,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { Brand } from '../components/Brand';
 import { useAuth } from '../auth/AuthProvider';
 import { Dashboard } from '../components/Dashboard';
@@ -36,6 +36,7 @@ export function Demo() {
   const firstName = identity?.firstName;
 
   const { section = 'dashboard' } = useParams();
+  const location = useLocation();
   const title = sections.find(([key]) => key === section)?.[1];
   return (
     <IonPage className="management-shell">
@@ -68,7 +69,7 @@ export function Demo() {
                   ) : (
                     'Visitante'
                   ))}
-                <small>{session ? 'Seu espaço de gestão' : 'Ambiente de demonstração'}</small>
+                <small>{session ? 'Seu espaço de gestão' : 'Acesso à gestão'}</small>
               </div>
             </div>
             <p className="nav-caption">GERENCIAMENTO</p>
@@ -109,7 +110,10 @@ export function Demo() {
               <div slot="end" className="management-top-actions">
                 {session && <LogoutButton />}
                 {session && (
-                  <Link to="/conta" className="management-profile-link">
+                  <Link
+                    to={`/conta?returnTo=${encodeURIComponent(location.pathname + location.search)}`}
+                    className="management-profile-link"
+                  >
                     Meu perfil
                   </Link>
                 )}
@@ -140,7 +144,7 @@ export function Demo() {
                             ? 'Cuide de cada cliente e facilite suas próximas vendas.'
                             : section === 'custos'
                               ? 'Conheça o custo de cada receita, ingrediente por ingrediente.'
-                              : 'Prévia da organização desta seção. Os cadastros virão em uma próxima etapa.'}
+                              : 'Este endereço não corresponde a uma seção da gestão. Escolha uma opção no menu.'}
                   </p>
                 </div>
               </div>

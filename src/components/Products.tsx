@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { readProductQuery } from '../domain/productQuery';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { requireSupabase } from '../services/supabase';
 import { EditProduct } from './EditProduct';
+import { TableScrollArea } from './TableScrollArea';
 import { Pagination } from './Pagination';
 import { totalPages } from '../domain/pagination';
 import { emptyProductFilters, loadProducts, productSortColumns } from '../services/products';
@@ -21,6 +23,7 @@ const columnLabels = {
 export function Products() {
   const { session, loading: authLoading, identity } = useAuth();
   const userId = session?.user.id;
+  const onProductsPage = useLocation().pathname === '/demo/produtos';
   const currentUser = useRef(userId);
   currentUser.current = userId;
   const [catalog, setCatalog] = useState<{
@@ -30,25 +33,37 @@ export function Products() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [sort, setSort] = useState<{ column: ProductSort; ascending: boolean }>({
-    column: 'name',
-    ascending: true,
-  });
-  const [draftFilters, setDraftFilters] = useState<ProductFilters>(emptyProductFilters);
-  const [filters, setFilters] = useState<ProductFilters>(emptyProductFilters);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { page, pageSize, sort, filters } = useMemo(
+    () => readProductQuery(searchParams),
+    [searchParams],
+  );
+  const [draftFilters, setDraftFilters] = useState<ProductFilters>(filters);
+  useEffect(() => setDraftFilters(filters), [filters]);
+  const updateQuery = useCallback(
+    (values: Record<string, string | number>) => {
+      setSearchParams((previous) => {
+        const next = new URLSearchParams(previous);
+        for (const [key, value] of Object.entries(values)) {
+          if (value === '') next.delete(key);
+          else next.set(key, String(value));
+        }
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
+  const setPage = useCallback((next: number) => updateQuery({ page: next }), [updateQuery]);
   function applyFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setPage(1);
-    setFilters({ ...draftFilters });
+    updateQuery({ ...draftFilters, page: 1 });
   }
   function orderBy(column: ProductSort) {
-    setPage(1);
-    setSort((previous) => ({
-      column,
-      ascending: previous.column === column ? !previous.ascending : true,
-    }));
+    updateQuery({
+      page: 1,
+      sort: column,
+      direction: sort.column === column && sort.ascending ? 'desc' : 'asc',
+    });
   }
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -71,7 +86,7 @@ export function Products() {
     setCatalog(null);
     setError('');
     setLoading(true);
-    if (!userId) {
+    if (!userId || !onProductsPage) {
       window.clearTimeout(timeout);
       setLoading(false);
       return;
@@ -117,7 +132,7 @@ export function Products() {
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [userId, retry, page, pageSize, sort, filters]);
+  }, [userId, retry, page, pageSize, sort, filters, setPage, onProductsPage]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving.current || !canManage || !userId) return;
@@ -258,8 +273,7 @@ export function Products() {
               type="button"
               onClick={() => {
                 setDraftFilters(emptyProductFilters);
-                setFilters(emptyProductFilters);
-                setPage(1);
+                updateQuery({ ...emptyProductFilters, page: 1 });
               }}
             >
               Limpar
@@ -341,7 +355,10 @@ export function Products() {
           {catalog && catalog.owner === userId && (
             <>
               {catalog.rows.length ? (
-                <div className="product-table-scroll">
+                <TableScrollArea
+                  label="Produtos cadastrados"
+                  hint="Deslize ou role a tabela para ver preço e ações →"
+                >
                   <table className="product-table">
                     <caption className="sr-only">Produtos cadastrados</caption>
                     <thead>
@@ -403,7 +420,7 @@ export function Products() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TableScrollArea>
               ) : (
                 <p>Nenhum produto encontrado com esses filtros.</p>
               )}
@@ -414,8 +431,7 @@ export function Products() {
                 disabled={busy || loading}
                 onPage={setPage}
                 onPageSize={(size) => {
-                  setPageSize(size);
-                  setPage(1);
+                  updateQuery({ size, page: 1 });
                 }}
               />
             </>

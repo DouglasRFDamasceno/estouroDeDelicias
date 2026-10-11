@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { PendingOrders } from './PendingOrders';
 import type { PendingOrder } from '../services/pendingOrders';
 import { useAuth } from '../auth/AuthProvider';
@@ -31,7 +32,16 @@ const methods: Record<string, string> = {
 };
 export function Sales() {
   const { identity, identityLoading } = useAuth();
-  const [tab, setTab] = useState<'orders' | 'sales'>('orders');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const onSalesPage = useLocation().pathname === '/demo/vendas';
+  const tab = searchParams.get('aba') === 'vendas' ? 'sales' : 'orders';
+  function setTab(value: 'orders' | 'sales') {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set('aba', value === 'sales' ? 'vendas' : 'pedidos');
+      return next;
+    });
+  }
   const [editing, setEditing] = useState<Sale | null>(null),
     [removing, setRemoving] = useState<Sale | null>(null);
   const [pending, setPending] = useState<{ order: PendingOrder; items: DraftSaleItem[] } | null>(
@@ -50,7 +60,15 @@ export function Sales() {
     [loading, setLoading] = useState(false),
     [error, setError] = useState('');
   useEffect(() => {
-    if (!identity?.isAdmin) return;
+    if (!onSalesPage || !identity?.isAdmin || searchParams.get('acao') !== 'nova') return;
+    setOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.set('aba', 'vendas');
+    next.delete('acao');
+    setSearchParams(next, { replace: true });
+  }, [identity?.isAdmin, searchParams, setSearchParams, onSalesPage]);
+  useEffect(() => {
+    if (!identity?.isAdmin || !onSalesPage) return;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     let active = true;
@@ -85,7 +103,7 @@ export function Sales() {
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [identity?.isAdmin, page, size, filter, sort, ascending, revision]);
+  }, [identity?.isAdmin, page, size, filter, sort, ascending, revision, onSalesPage]);
   if (identityLoading) return <p role="status">Carregando acesso…</p>;
   if (!identity?.isAdmin)
     return (

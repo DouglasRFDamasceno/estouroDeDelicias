@@ -10,7 +10,7 @@ export function AuthNotice({ notFound = false }: { notFound?: boolean }) {
           <Link to="/">
             <Brand />
           </Link>
-          <p className="eyebrow">ETAPA 1 · ESTRUTURA E INTERFACE</p>
+          <p className="eyebrow">ESTOURO DE DELÍCIAS</p>
           <h1>
             {notFound
               ? 'Página não encontrada'
@@ -21,11 +21,11 @@ export function AuthNotice({ notFound = false }: { notFound?: boolean }) {
           <p>
             {notFound
               ? 'Este endereço não está disponível.'
-              : 'O login ainda não está integrado. Cadastro, confirmação de e-mail e recuperação de senha serão implementados com Supabase Auth na próxima etapa.'}
+              : 'Entre com sua conta para acessar a gestão. Novos acessos são concedidos por convite.'}
           </p>
-          <p>A demonstração é pública, usa dados fictícios e não salva informações.</p>
-          <Link className="button" to="/demo/dashboard">
-            Explorar demonstração ↗
+          <p>A gestão requer uma conta autorizada. Você pode conhecer nossos sabores no site.</p>
+          <Link className="button" to="/entrar">
+            Acessar a gestão ↗
           </Link>
           <Link className="text-link" to="/">
             Voltar ao início

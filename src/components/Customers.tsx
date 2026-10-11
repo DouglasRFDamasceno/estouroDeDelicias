@@ -284,11 +284,25 @@ function CustomerModal({
   const [name, setName] = useState(customer?.name ?? ''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const opener = useRef(document.activeElement);
+  const [discardRequested, setDiscardRequested] = useState(false);
+  function requestClose() {
+    if (saving.current) return;
+    if (name !== (customer?.name ?? '')) setDiscardRequested(true);
+    else onClose();
+  }
   useEffect(() => {
     active.current = true;
-    dialog.current?.showModal();
+    const returnFocus = opener.current;
+    const modal = dialog.current;
+    modal?.showModal();
     return () => {
       active.current = false;
+      modal?.close();
+      requestAnimationFrame(() => {
+        if (!modal?.open && returnFocus instanceof HTMLElement && returnFocus.isConnected)
+          returnFocus.focus();
+      });
     };
   }, []);
   async function save(event: FormEvent) {
@@ -319,47 +333,63 @@ function CustomerModal({
     <dialog
       ref={dialog}
       className="sale-dialog customer-dialog"
-      aria-labelledby="new-customer-title"
+      aria-labelledby={discardRequested ? 'discard-customer-title' : 'new-customer-title'}
       onCancel={(e) => {
-        if (saving.current) e.preventDefault();
-        else onClose();
+        e.preventDefault();
+        if (discardRequested) setDiscardRequested(false);
+        else requestClose();
       }}
     >
-      <form onSubmit={save}>
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">GESTÃO DE CLIENTES</p>
-            <h2 id="new-customer-title">{customer ? 'Editar cliente' : 'Novo cliente'}</h2>
+      {discardRequested ? (
+        <section aria-labelledby="discard-customer-title">
+          <h2 id="discard-customer-title">Descartar alterações?</h2>
+          <p>O que você preencheu ainda não foi salvo.</p>
+          <div className="sale-actions">
+            <button type="button" autoFocus onClick={() => setDiscardRequested(false)}>
+              Continuar editando
+            </button>
+            <button type="button" className="sale-primary" onClick={onClose}>
+              Descartar alterações
+            </button>
           </div>
-          <button type="button" disabled={busy} onClick={onClose} aria-label="Fechar">
-            ✕
-          </button>
-        </div>
-        <fieldset disabled={busy}>
-          <label>
-            Nome do cliente
-            <input
-              autoFocus
-              required
-              minLength={2}
-              maxLength={120}
-              autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nome da pessoa ou empresa"
-            />
-          </label>
-        </fieldset>
-        {error && <p role="alert">{error}</p>}
-        <div className="sale-actions">
-          <button type="button" disabled={busy} onClick={onClose}>
-            Cancelar
-          </button>
-          <button type="submit" className="sale-primary" disabled={busy}>
-            {busy ? 'Salvando…' : customer ? 'Salvar alterações' : 'Salvar cliente'}
-          </button>
-        </div>
-      </form>
+        </section>
+      ) : (
+        <form onSubmit={save}>
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">GESTÃO DE CLIENTES</p>
+              <h2 id="new-customer-title">{customer ? 'Editar cliente' : 'Novo cliente'}</h2>
+            </div>
+            <button type="button" disabled={busy} onClick={requestClose} aria-label="Fechar">
+              ✕
+            </button>
+          </div>
+          <fieldset disabled={busy}>
+            <label>
+              Nome do cliente
+              <input
+                autoFocus
+                required
+                minLength={2}
+                maxLength={120}
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nome da pessoa ou empresa"
+              />
+            </label>
+          </fieldset>
+          {error && <p role="alert">{error}</p>}
+          <div className="sale-actions">
+            <button type="button" disabled={busy} onClick={requestClose}>
+              Cancelar
+            </button>
+            <button type="submit" className="sale-primary" disabled={busy}>
+              {busy ? 'Salvando…' : customer ? 'Salvar alterações' : 'Salvar cliente'}
+            </button>
+          </div>
+        </form>
+      )}
     </dialog>
   );
 }

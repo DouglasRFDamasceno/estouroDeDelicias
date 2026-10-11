@@ -2,6 +2,8 @@ import { Fragment, createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
+import { createSessionPolicy } from '../services/sessionPolicy';
+import { logoutCurrentSession } from '../services/logout';
 type Identity = { owner: string; firstName: string; isAdmin: boolean };
 const Context = createContext<{
   session: Session | null;
@@ -31,12 +33,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     let active = true;
     let receivedAuthEvent = false;
+    const policy = createSessionPolicy(() => {
+      if (!active) return;
+      setSession(null);
+      setIdentity(null);
+      setIdentityResolvedFor(null);
+      void logoutCurrentSession('expired').catch(() => {
+        // Keep protected pages unmounted even if remote revocation fails.
+        if (active) window.location.replace('/entrar?session=expired');
+      });
+    });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, value) => {
       receivedAuthEvent = true;
       if (active) {
-        setSession(value);
+        setSession(policy.accept(value, _event) ? value : null);
         setLoading(false);
         if (!value) {
           setIdentity(null);
@@ -48,7 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getSession()
       .then(({ data, error }) => {
         if (active && !receivedAuthEvent) {
-          setSession(error ? null : data.session);
+          setSession(
+            !error && policy.accept(data.session, 'INITIAL_SESSION') ? data.session : null,
+          );
           setLoading(false);
         }
       })
@@ -61,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
       subscription.unsubscribe();
+      policy.dispose();
     };
   }, []);
   useEffect(() => {

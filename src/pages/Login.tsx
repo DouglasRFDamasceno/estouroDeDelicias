@@ -102,6 +102,11 @@ export function Login() {
               <span className="login-story-footer">Pequenos gestos, grandes sorrisos.</span>
             </aside>
             <section className="login-form-panel" aria-labelledby="login-title">
+              {new URLSearchParams(location.search).get('session') === 'expired' && (
+                <p className="login-feedback" role="status">
+                  Sua sessão expirou. Entre novamente para continuar.
+                </p>
+              )}
               <span className="login-welcome" aria-hidden="true">
                 ♡
               </span>

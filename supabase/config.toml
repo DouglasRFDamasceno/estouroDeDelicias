@@ -2,3 +2,9 @@
 # Não depender da verificação legada do gateway (incompatível com algumas signing keys).
 [functions.invite-user]
 verify_jwt = false
+
+# Hosted projects: configure the same limits under Authentication > Sessions.
+# These settings in this file apply to the local Supabase environment.
+[auth.sessions]
+timebox = "72h"
+inactivity_timeout = "72h"

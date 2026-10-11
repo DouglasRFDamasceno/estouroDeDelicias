@@ -2,7 +2,7 @@ import { requireSupabase } from './supabase';
 
 // Compartilha a operação entre botões para evitar pedidos duplicados.
 let pending: Promise<void> | null = null;
-export function logoutCurrentSession(): Promise<void> {
+export function logoutCurrentSession(reason?: 'expired'): Promise<void> {
   if (!pending) {
     pending = (async () => {
       const { error } = await requireSupabase().auth.signOut({ scope: 'local' });
@@ -14,7 +14,7 @@ export function logoutCurrentSession(): Promise<void> {
         return;
       }
       // Novo documento descarta os formulários e o histórico de páginas do Ionic em memória.
-      window.location.replace('/entrar');
+      window.location.replace(reason === 'expired' ? '/entrar?session=expired' : '/entrar');
     })().finally(() => {
       pending = null;
     });

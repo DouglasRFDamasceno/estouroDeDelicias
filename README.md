@@ -17,6 +17,12 @@ npm run dev
 
 Abra http://127.0.0.1:5173. Encerre o servidor com Ctrl+C. `npm ci` instala exatamente o lockfile; use `npm install` apenas ao alterar dependências. A vitrine funciona sem configuração. Para autenticação real, configure `.env.local` e o Supabase conforme [o guia](docs/supabase.md).
 
+## Padronização do código
+
+Use `npm run format` para formatar o código com Prettier e `npm run lint:fix` para aplicar as correções automáticas do ESLint. O padrão usa dois espaços, aspas simples em JavaScript/TypeScript, ponto e vírgula e largura de referência de 100 caracteres. O arquivo `.editorconfig` compartilha as convenções com o editor.
+
+Antes de abrir um PR, execute `npm run check`: ele verifica ESLint (sem avisos), formatação, testes e build com validação de tipos. Também é possível executar `npm run lint` e `npm run format:check` separadamente. O ESLint verifica TypeScript, imports de tipos e regras/dependências dos Hooks do React; as funções Supabase têm suporte ao global `Deno`. Arquivos gerados e dependências ficam fora da análise.
+
 ## 2. Validar em passos pequenos
 
 1. Na página inicial, confira a foto real, os sabores e a seleção de tamanhos (50 g, 100 g e 150 g). Confirme que os preços mudam conforme o cardápio enviado.

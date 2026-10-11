@@ -9,7 +9,18 @@ test('CPF: dígitos verificadores e sequências repetidas', () => {
 });
 test('perfil opcional sem PII adicional e normalização', () => {
   assert.equal(validateProfile({ ...emptyProfile, full_name: 'Maria' }), null);
-  assert.equal(normalizeProfile({ ...emptyProfile, full_name: ' Maria ', postal_code: '30100-000', state: 'mg' }).postal_code, '30100000');
+  assert.equal(
+    normalizeProfile({
+      ...emptyProfile,
+      full_name: ' Maria ',
+      postal_code: '30100-000',
+      state: 'mg',
+    }).postal_code,
+    '30100000',
+  );
   assert.notEqual(validateProfile({ ...emptyProfile, full_name: 'Maria', state: 'XX' }), null);
-  assert.notEqual(validateProfile({ ...emptyProfile, full_name: 'Maria', document: '11111111111' }), null);
+  assert.notEqual(
+    validateProfile({ ...emptyProfile, full_name: 'Maria', document: '11111111111' }),
+    null,
+  );
 });

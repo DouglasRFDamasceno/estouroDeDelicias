@@ -15,7 +15,9 @@ export function logoutCurrentSession(): Promise<void> {
       }
       // Novo documento descarta os formulários e o histórico de páginas do Ionic em memória.
       window.location.replace('/entrar');
-    })().finally(() => { pending = null; });
+    })().finally(() => {
+      pending = null;
+    });
   }
   return pending;
 }

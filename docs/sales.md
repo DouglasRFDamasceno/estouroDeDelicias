@@ -2,7 +2,7 @@
 
 Em Gestão → Vendas, **Nova venda** abre o modal. Cliente e produto usam seletores com busca por nome no backend (dez opções por página, com navegação). Digite para filtrar e clique em uma opção, ou use as setas e Enter. Escape fecha as opções sem fechar o modal. Produtos são adicionados aos itens ao selecionar; ajuste suas quantidades abaixo. O cliente é opcional (Consumidor final); o valor recebido acompanha automaticamente o total ao adicionar, remover ou alterar quantidades. É possível ajustar manualmente para registrar recebimento parcial ou zero. Para registrar recebimento, selecione Pix, dinheiro, cartão ou outro. Observações são opcionais. Os dados são registros manuais, sem processamento de pagamento.
 
-A listagem tem filtro por cliente, ordenação por data/cliente/total e paginação no backend. A seleção de produtos também consulta páginas no backend. A visão geral continua demonstrativa; não apresenta os registros reais de vendas nesta etapa.
+A listagem tem filtro por cliente, ordenação por data/cliente/total e paginação no backend. A seleção de produtos também consulta páginas no backend. A Visão geral consulta as vendas reais por período, com recebimentos, pendências e custos estimados conforme [as regras dos indicadores](dashboard.md).
 
 ## Banco e segurança
 

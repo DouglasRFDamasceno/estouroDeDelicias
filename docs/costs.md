@@ -9,7 +9,7 @@ Exemplo: usar 200 g do chocolate custa `3000 centavos × 200 g ÷ 1000 g = 600 c
 
 Conversões: kg ↔ g, l ↔ ml e un ↔ un. Massa e volume não são intercambiáveis; o sistema não presume densidade. Quantidades permitem três casas decimais, vírgula ou ponto, sem separador de milhares. Rendimento deve ser inteiro positivo (quantidade de unidades da apresentação selecionada, não o peso da receita).
 
-Os preços de insumos são **referências atuais de compra**. Editar o preço/quantidade de referência recalcula as receitas existentes na consulta ao banco. Não é um histórico de compras, controle de estoque, movimentação de caixa ou custo histórico das vendas. Energia, perdas e mão de obra não são adicionadas automaticamente. A Visão geral segue demonstrativa e não usa esses custos no resultado de vendas nesta etapa.
+Os preços de insumos são **referências atuais de compra**. Editar o preço/quantidade de referência recalcula as receitas existentes na consulta ao banco. Não é um histórico de compras, controle de estoque, movimentação de caixa ou custo histórico das vendas. Energia, perdas e mão de obra não são adicionadas automaticamente. A Visão geral usa essas referências para estimar o custo das unidades vendidas, com aviso de cobertura e sem apresentar lucro líquido. Veja [indicadores](dashboard.md).
 
 Cada cadastro permite criar, editar e remover, com confirmação na exclusão. Insumos usados em receitas não podem ser excluídos até retirar os vínculos. Um insumo usado também não pode mudar de família de unidade (por exemplo, de kg para ml). Remover receita remove seus itens. Remover produto do catálogo preserva a receita e seu rótulo, permitindo escolher outro produto na edição.
 

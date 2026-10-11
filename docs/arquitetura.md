@@ -2,20 +2,20 @@
 
 ## Decisões da etapa 1
 
-Uma única aplicação React + TypeScript, construída pelo Vite. Ionic oferece componentes e navegação adaptados ao dispositivo; Capacitor empacotará o mesmo build em Android/iOS. Sem backend próprio nesta fase. Supabase fornecerá Auth e PostgreSQL; Cloudflare Pages receberá os arquivos estáticos futuramente. Internet obrigatória; sem service worker, cache de dados ou sincronização offline.
+Uma única aplicação React + TypeScript, construída pelo Vite. Ionic oferece componentes e navegação adaptados ao dispositivo; Capacitor empacotará o mesmo build em Android/iOS. Sem backend próprio nesta fase. Supabase fornece Auth e PostgreSQL; a aplicação web é hospedada na Vercel. Internet obrigatória; sem service worker, cache de dados ou sincronização offline.
 
-- `src/pages`: telas públicas e área demonstrativa.
+- `src/pages`: telas públicas e área de gestão.
 - `src/components`: elementos reutilizáveis.
-- `src/services`: dados fictícios agora; adaptadores Supabase depois.
+- `src/services`: adaptadores Supabase; dados antigos de demonstração não são usados pela gestão.
 - `src/types`: contratos de domínio.
 - `src/domain`: cálculos e formatação compartilhados por web e aplicativos.
-- `supabase/migrations`: SQL versionado quando a modelagem for implementada.
+- `supabase/migrations`: SQL versionado das tabelas, políticas e funções implementadas.
 
-A etapa de Auth foi implementada no código: cadastro, login, recuperação, callbacks web e perfil privado em `/conta`. Veja [ativação e segurança](supabase.md). `/demo/*` permanece público e fictício. A migração de perfil não cria papéis nem acesso a empresas.
+A etapa de Auth foi implementada no código: cadastro, login, recuperação, callbacks web e perfil privado em `/conta`. Veja [ativação e segurança](supabase.md). `/demo/*` mantém o endereço original, mas suas seções consultam dados reais. Produtos são consultáveis por contas confirmadas; clientes, vendas, custos e indicadores exigem administrador confirmado. O catálogo da Estouro é compartilhado, sem multiempresa implementada. Perfis continuam privados ao titular.
 
 ## Etapas pequenas e critérios de validação
 
-1. **Atual:** estrutura, landing e layout Ionic. Validar navegação, telas pequenas, tipos e build.
+1. **Base implementada:** estrutura, landing e layout Ionic. Validar navegação, telas pequenas, tipos e build.
 2. **Auth:** cliente Supabase, cadastro/login/logout/recuperação, sessão persistente, estados de carregamento e erro, validação de formulários, rotas privadas e callbacks web/mobile. Testar sessão expirada, confirmação, recuperação e acesso direto sem sessão.
 3. **Banco:** revisar a proposta abaixo; criar migrações SQL reais, RLS e provisionamento transacional da empresa. Testar com duas empresas e acesso direto à API, incluindo alteração fraudulenta de company_id.
 4. **Cadastros:** produtos, clientes, despesas. Validar valores, carregamento, lista vazia, erros e isolamento.
@@ -47,17 +47,10 @@ Habilitar RLS em todas as tabelas expostas. Sem políticas de negócio para anon
 
 Evitar recursão da policy de membros com helper privado cuidadosamente restrito (SECURITY DEFINER, search_path fixo, permissões mínimas); revisar antes de implementar. Grants também limitam ações. Testes com anon e dois usuários em empresas diferentes devem demonstrar isolamento da API, inclusive inserts/updates cruzados. Proteção de rotas é experiência de uso; RLS é a fronteira de segurança. Não usar service_role no navegador, logs, .env.example ou bundle.
 
-## Indicadores e período
+## Indicadores e período implementados
 
-A demonstração contém três vendas confirmadas e duas despesas de outubro de 2026. Os recebimentos fictícios pertencem às mesmas vendas do período; não é relatório de fluxo de caixa.
+A Visão geral usa exclusivamente os registros reais do Supabase. Agregações e ranking ocorrem no servidor, com RLS, filtro por `sale_date` e paginação nas tabelas. A data inicial padrão é o começo do mês atual em America/Sao_Paulo.
 
-- Faturamento: soma de quantidade × preço histórico, menos desconto de cada venda confirmada no período de sold_on.
-- Recebidos: soma de pagamentos dessas vendas, até a data de corte do relatório.
-- A receber: faturamento menos recebidos; não aceitar pagamento acima do total.
-- Custo dos itens vendidos: soma de quantidade × custo histórico das vendas confirmadas do período.
-- Despesas: soma de despesas por incurred_on no período; excluir insumos já incorporados ao custo dos produtos para não contar duas vezes.
-- Resultado estimado: faturamento − custo dos itens vendidos − despesas. Regime de competência; não é caixa nem lucro contábil, e não inclui tributos/taxas não cadastrados.
+As regras e limites estão em [docs/dashboard.md](dashboard.md). Recebimentos são os valores informados nas vendas selecionadas, sem histórico de pagamentos por data. Custos e margem bruta usam receitas e preços atuais dos insumos; não são custos históricos nem lucro líquido. Produtos sem receita ou com múltiplas receitas deixam a margem total indisponível. Não existe tabela de despesas operacionais nesta etapa, por isso esses valores não são presumidos.
 
-Resultado do exemplo: faturamento R$ 606,00, recebidos R$ 276,00, a receber R$ 330,00, custo R$ 262,00, despesas R$ 131,00 e resultado R$ 213,00. A vitrine pública apresenta o cardápio fornecido pela marca; seus preços não se vinculam aos dados fictícios da gestão.
-
-Datas de negócio são DATE e apresentadas em pt-BR; timestamps de auditoria serão TIMESTAMPTZ em UTC. Filtros futuros usam datas inclusivas na zona da empresa. Relatório de caixa por paid_on será separado para não confundir recebimentos de vendas antigas com faturamento do período.
+A modelagem multiempresa, pagamentos e descontos descritos acima é uma proposta futura; não corresponde ao esquema atual. A vitrine pública ainda possui catálogo estático, independente do cadastro da gestão.

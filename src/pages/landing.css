@@ -93,6 +93,17 @@
   margin-top: 12px;
   justify-content: space-between;
 }
+.modern-catalog .g-size-picker {
+  flex-shrink: 0;
+}
+.modern-catalog .g-size-picker button {
+  flex: 0 0 auto;
+  min-width: 52px;
+  min-height: 44px;
+  padding: 10px 12px;
+  white-space: nowrap;
+  line-height: 1;
+}
 .landing-favorites-filter {
   min-height: 44px;
   padding: 8px 14px;
@@ -142,12 +153,19 @@
   flex-direction: column;
 }
 .modern-catalog .g-flavor-body > .landing-flavor-actions {
-  flex-direction: row;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
   align-items: stretch;
   gap: 8px;
   margin-top: auto;
   padding-top: 12px;
+}
+.modern-catalog .landing-flavor-actions > button {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  align-self: stretch;
 }
 .modern-catalog .g-flavor-body .landing-flavor-note {
   font-size: 12px;
@@ -168,10 +186,11 @@
   border-radius: 10px;
   padding: 10px 14px;
   min-height: 44px;
-  line-height: 1;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
 }
 .landing-add span {

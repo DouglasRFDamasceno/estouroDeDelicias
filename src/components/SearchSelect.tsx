@@ -27,7 +27,7 @@ export function SearchSelect({ label, value, placeholder, disabled, load, onSele
  }
  return <div ref={root} className="search-select" onBlur={e => { if (!root.current?.contains(e.relatedTarget as Node)) close(); }}>
  <label htmlFor={id}>{label}</label><div className="search-select-input"><input id={id} ref={input} role="combobox" autoComplete="off" aria-autocomplete="list" aria-expanded={open && !disabled} aria-controls={`${id}-list`} aria-activedescendant={open && active >= 0 ? `${id}-option-${active}` : undefined} aria-describedby={`${id}-hint`} disabled={disabled || creating} maxLength={120} placeholder={placeholder} value={open ? search : value?.label ?? ''}
- onFocus={() => { setOpen(true); setSearch(''); setPage(1); }} onChange={e => { if (value) onSelect(null); setSearch(e.target.value); setPage(1); setActive(-1); setRows([]); setLoading(true); setOpen(true); }}
+ onFocus={() => { setOpen(true); setSearch(''); setPage(1); }} onClick={() => { if (!open) { setSearch(''); setPage(1); setActive(-1); setOpen(true); } }} onChange={e => { if (value) onSelect(null); setSearch(e.target.value); setPage(1); setActive(-1); setRows([]); setLoading(true); setOpen(true); }}
  onKeyDown={e => {
   if (e.key === 'Escape' && open) { e.preventDefault(); e.stopPropagation(); close(); }
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); setOpen(true); setActive(a => rows.length ? Math.max(0, Math.min(rows.length - 1, a + (e.key === 'ArrowDown' ? 1 : -1))) : -1); }

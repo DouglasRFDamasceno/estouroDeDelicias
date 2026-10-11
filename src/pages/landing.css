@@ -114,6 +114,9 @@
   grid-template-columns: minmax(0, 1fr) 320px;
   align-items: start;
 }
+.landing-shopping-layout > * {
+  min-width: 0;
+}
 .modern-catalog .g-flavor-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -124,11 +127,27 @@
   color: #71556d;
   margin: 0 0 20px;
 }
+.modern-catalog .g-flavor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+.modern-catalog .g-flavor-art {
+  flex-shrink: 0;
+}
+.modern-catalog .g-flavor-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
 .modern-catalog .g-flavor-body > .landing-flavor-actions {
   flex-direction: row;
   display: flex;
-  gap: 10px;
-  margin-top: 12px;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
 }
 .modern-catalog .g-flavor-body .landing-flavor-note {
   font-size: 12px;
@@ -138,24 +157,42 @@
 }
 .landing-add {
   flex: 1;
+  min-width: 0;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  background: #452365;
-  color: white;
-  border: 0;
+  gap: 6px;
+  background: #fff0f5;
+  color: #a0003b;
+  border: 1px solid #efb4c9;
   border-radius: 10px;
   padding: 10px 14px;
   min-height: 44px;
+  line-height: 1;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
 .landing-add span {
-  font-size: 22px;
+  font-size: 20px;
+  line-height: 1;
+}
+.landing-add:active:not(:disabled) {
+  background: #ffd9e6;
+}
+@media (hover: hover) {
+  .landing-add:hover:not(:disabled) {
+    background: #ffe1ec;
+    border-color: #b70040;
+  }
 }
 .landing-heart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  padding: 0;
   border: 1px solid #dfccd7;
   border-radius: 10px;
   background: white;
@@ -163,6 +200,7 @@
   min-width: 44px;
   min-height: 44px;
   font-size: 24px;
+  line-height: 1;
   cursor: pointer;
 }
 .landing-heart[aria-pressed='true'] {
@@ -175,6 +213,10 @@
   background: #f5edf4;
   border-left: 1px solid #e8dce3;
   padding: 28px 22px;
+  max-height: 100%;
+  max-height: min(70dvh, 720px);
+  overflow-y: auto;
+  scroll-margin-top: 12px;
 }
 .landing-order h2 {
   font-size: 25px;
@@ -331,7 +373,9 @@
     position: static;
     border-left: 0;
     border-top: 1px solid #dfccd7;
-    padding: 28px;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    max-height: none;
+    overflow-y: visible;
   }
   .landing-modern .landing-faq {
     grid-template-columns: 1fr;
@@ -403,7 +447,7 @@
     padding-bottom: calc(100px + env(safe-area-inset-bottom));
   }
 }
-@media (max-width: 380px) {
+@media (max-width: 440px) {
   .modern-catalog .g-flavor-grid {
     grid-template-columns: 1fr;
   }

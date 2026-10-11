@@ -77,6 +77,18 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
             </button>
           </IonButtons>
         </IonToolbar>
+        <button
+          type="button"
+          className="landing-selection-link"
+          onClick={() => {
+            selectionRef.current?.scrollIntoView({ block: 'start' });
+            selectionRef.current?.focus({ preventScroll: true });
+          }}
+        >
+          Minha seleção · {count} {count === 1 ? 'item' : 'itens'} · {money(subtotal)} ↓
+        </button>
+      </IonHeader>
+      <IonContent>
         <div className="landing-catalog-tools">
           <label className="landing-search">
             <span>Encontre seu sabor</span>
@@ -112,16 +124,7 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
               ♡ Favoritos ({favorites.length})
             </button>
           </div>
-          <button
-            type="button"
-            className="landing-selection-link"
-            onClick={() => selectionRef.current?.focus()}
-          >
-            Minha seleção · {count} {count === 1 ? 'item' : 'itens'} · {money(subtotal)} ↓
-          </button>
         </div>
-      </IonHeader>
-      <IonContent>
         <div className="landing-shopping-layout">
           <div className="g-catalog-body">
             <p className="landing-result-count" role="status">

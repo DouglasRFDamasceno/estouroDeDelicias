@@ -13,9 +13,11 @@ import type {
 import { loadSales } from '../services/sales';
 import type { Sale, SaleSort } from '../services/sales';
 import { Pagination } from './Pagination';
+import { DashboardCharts } from './DashboardCharts';
 const number = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
 export function Dashboard() {
   const { identity, identityLoading } = useAuth();
+  const [tableTab, setTableTab] = useState<'sales' | 'products'>('sales');
   const [period, setPeriod] = useState(dashboardPeriod),
     [draft, setDraft] = useState(dashboardPeriod),
     [periodError, setPeriodError] = useState('');
@@ -61,6 +63,30 @@ export function Dashboard() {
     );
   return (
     <div className="real-dashboard">
+      <section className="dashboard-intro" aria-labelledby="dashboard-intro-title">
+        <div>
+          <span className="dashboard-overline">CADA ESTOURO CONTA</span>
+          <h2 id="dashboard-intro-title">Um olhar para o seu negócio.</h2>
+          <p>
+            Dos primeiros pedidos às próximas conquistas. Acompanhe o que faz sua marca crescer.
+          </p>
+          <Link to="/demo/vendas" className="dashboard-intro-action">
+            Registrar uma venda <span aria-hidden="true">↗</span>
+          </Link>
+        </div>
+        <div className="dashboard-intro-art" aria-hidden="true">
+          <span>✳</span>
+          <span>✦</span>
+          <span>✧</span>
+          <div className="dashboard-art-bars">
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+          </div>
+        </div>
+      </section>
       <form
         className="panel dashboard-period"
         onSubmit={(e) => {
@@ -74,6 +100,10 @@ export function Dashboard() {
           }
         }}
       >
+        <div className="dashboard-period-heading">
+          <span className="dashboard-overline">SEU NEGÓCIO EM NÚMEROS</span>
+          <h2>Escolha o período</h2>
+        </div>
         <div>
           <label>
             De
@@ -165,16 +195,23 @@ export function Dashboard() {
                 summary.sale_count ? money(summary.average_ticket_cents) : '—',
                 `${number(summary.sale_count)} vendas no período`,
               ],
-            ].map(([label, value, hint]) => (
-              <article className="stat" key={label}>
-                <span>{label}</span>
+            ].map(([label, value, hint], index) => (
+              <article className={`stat dashboard-stat dashboard-stat-${index}`} key={label}>
+                <div className="dashboard-stat-top">
+                  <span>{label}</span>
+                  <span className="dashboard-stat-icon" aria-hidden="true">
+                    {['↗', '✓', '◷', '◇'][index]}
+                  </span>
+                </div>
                 <strong>{value}</strong>
                 <small>{hint}</small>
               </article>
             ))}
           </div>
+          <DashboardCharts period={period} summary={summary} />
           <div className="dashboard-grid">
-            <section className="panel">
+            <section className="panel dashboard-receipts-card">
+              <p className="dashboard-overline">SAÚDE DOS RECEBIMENTOS</p>
               <h2>Recebimentos e pendências</h2>
               <dl className="dashboard-numbers">
                 <div>
@@ -220,7 +257,7 @@ export function Dashboard() {
               </div>
               <Link to="/demo/vendas">Consultar vendas ↗</Link>
             </section>
-            <section className="panel">
+            <section className="panel dashboard-margin-card">
               <p className="eyebrow">CUSTOS E COBERTURA</p>
               <h2>Margem bruta estimada</h2>
               <strong className="dashboard-margin">
@@ -277,8 +314,14 @@ export function Dashboard() {
               <Link to="/demo/custos">Revisar receitas e insumos ↗</Link>
             </section>
           </div>
-          <section className="panel">
-            <h2>Cadastros atuais</h2>
+          <section className="panel dashboard-directory">
+            <div className="dashboard-section-heading">
+              <div>
+                <p className="dashboard-overline">TUDO NO SEU LUGAR</p>
+                <h2>Seu negócio organizado</h2>
+              </div>
+              <span className="dashboard-section-note">Cadastros atuais</span>
+            </div>
             <div className="dashboard-counts">
               {[
                 ['Produtos', summary.product_count, 'produtos'],
@@ -296,16 +339,60 @@ export function Dashboard() {
               Totais atuais de cadastros; não são limitados pelo período das vendas.
             </p>
           </section>
-          <DashboardTable
-            key={`sales-${period.from}-${period.until}-${revision}`}
-            kind="sales"
-            period={period}
-          />
-          <DashboardTable
-            key={`products-${period.from}-${period.until}-${revision}`}
-            kind="products"
-            period={period}
-          />
+          <div className="dashboard-tables">
+            <div className="dashboard-tabs" role="tablist" aria-label="Tabelas do período">
+              {(
+                [
+                  ['sales', 'Vendas'],
+                  ['products', 'Produtos vendidos'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  id={`dashboard-tab-${key}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={tableTab === key}
+                  aria-controls={`dashboard-panel-${key}`}
+                  tabIndex={tableTab === key ? 0 : -1}
+                  onClick={() => setTableTab(key)}
+                  onKeyDown={(event) => {
+                    let next: 'sales' | 'products';
+                    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                      next = key === 'sales' ? 'products' : 'sales';
+                    } else if (event.key === 'Home') {
+                      next = 'sales';
+                    } else if (event.key === 'End') {
+                      next = 'products';
+                    } else {
+                      return;
+                    }
+                    event.preventDefault();
+                    setTableTab(next);
+                    document.getElementById(`dashboard-tab-${next}`)?.focus();
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {(['sales', 'products'] as const).map((kind) => (
+              <div
+                key={kind}
+                id={`dashboard-panel-${kind}`}
+                role="tabpanel"
+                aria-labelledby={`dashboard-tab-${kind}`}
+                hidden={tableTab !== kind}
+                tabIndex={0}
+              >
+                <DashboardTable
+                  key={`${kind}-${period.from}-${period.until}-${revision}`}
+                  kind={kind}
+                  period={period}
+                />
+              </div>
+            ))}
+          </div>
         </>
       )}
     </div>

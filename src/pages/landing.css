@@ -52,9 +52,6 @@
   font-size: 14px;
   line-height: 1.8;
 }
-.landing-mobile-order {
-  display: none;
-}
 .modern-catalog {
   --width: min(1240px, 96vw);
 }
@@ -436,35 +433,6 @@
     font-size: 12px;
     padding: 10px;
   }
-  .landing-mobile-order {
-    position: fixed;
-    z-index: 10;
-    bottom: calc(16px + env(safe-area-inset-bottom));
-    left: 20px;
-    right: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    min-height: 52px;
-    padding: 14px 22px;
-    border: 0;
-    border-radius: 30px;
-    background: #452365;
-    color: white;
-    font: inherit;
-    font-size: 14px;
-    font-weight: 700;
-    box-shadow: 0 8px 26px #45236535;
-    cursor: pointer;
-  }
-  .landing-mobile-order > span:first-child {
-    color: #ffdb49;
-    font-size: 24px;
-  }
-  .landing-modern .g-footer {
-    padding-bottom: calc(100px + env(safe-area-inset-bottom));
-  }
 }
 @media (max-width: 440px) {
   .modern-catalog .g-flavor-grid {
@@ -526,4 +494,14 @@
   flex-direction: column;
   align-items: center;
   margin: 16px 0;
+}
+
+.landing-order-guidance {
+  margin: 22px 0 0;
+  padding-inline: 16px;
+  font-size: 13px;
+  color: #ffe3eb;
+}
+.landing-order-guidance + .g-contact-phone {
+  margin-top: 8px;
 }

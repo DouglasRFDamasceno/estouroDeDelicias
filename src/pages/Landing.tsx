@@ -5,7 +5,6 @@ import { Brand } from '../components/Brand';
 import { useAuth } from '../auth/AuthProvider';
 import { LandingCatalog } from '../components/LandingCatalog';
 import './landing.css';
-const whatsapp = (text: string) => `https://wa.me/5531984277738?text=${encodeURIComponent(text)}`;
 export function Landing() {
   const { session, loading } = useAuth();
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -157,14 +156,14 @@ export function Landing() {
                   Uma pausa no dia, uma sessão de filme ou um carinho para alguém especial. Escolha
                   os sabores e fale com a gente para combinar seu pedido.
                 </p>
-                <a
+                <button
+                  type="button"
                   className="g-button"
-                  href={whatsapp('Olá! Gostaria de combinar um pedido de pipocas gourmet.')}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => setCatalogOpen(true)}
+                  aria-haspopup="dialog"
                 >
                   Vamos adoçar esse dia? ↗
-                </a>
+                </button>
               </div>
               <div className="g-moment-stack">
                 {[
@@ -232,25 +231,20 @@ export function Landing() {
                 <br />
                 delicioso começa com um <em>oi.</em>
               </h2>
-              <a
+              <button
+                type="button"
                 className="g-button yellow"
-                href={whatsapp('Oi! Quero fazer um pedido de pipocas gourmet.')}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={() => setCatalogOpen(true)}
+                aria-haspopup="dialog"
               >
-                Pedir pelo WhatsApp ↗
-              </a>
+                Montar meu pedido ↗
+              </button>
+              <p className="landing-order-guidance">
+                Escolha seus sabores e finalize pelo WhatsApp.
+              </p>
               <p className="g-contact-phone">(31) 98427-7738</p>
             </section>
           </main>
-          <button
-            type="button"
-            className="landing-mobile-order"
-            onClick={() => setCatalogOpen(true)}
-            aria-haspopup="dialog"
-          >
-            <span aria-hidden="true">✳</span> Escolher sabores <span aria-hidden="true">↗</span>
-          </button>
           <footer className="g-footer">
             <Brand />
             <p>Feito com amor em cada estouro.</p>

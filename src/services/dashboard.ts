@@ -70,3 +70,20 @@ export async function loadDashboardProducts(
   if (result.error || !result.data) throw result.error ?? Error('Produtos indisponíveis');
   return result.data;
 }
+
+export interface DashboardDay {
+  date: string;
+  revenue_cents: number;
+}
+export async function loadDashboardDays(
+  from: string,
+  until: string,
+  signal: AbortSignal,
+): Promise<DashboardDay[]> {
+  validateDashboardPeriod(from, until);
+  const result = await requireSupabase()
+    .rpc('dashboard_daily_sales', { p_from: from, p_until: until })
+    .abortSignal(signal);
+  if (result.error || !result.data) throw result.error ?? Error('Série indisponível');
+  return result.data as DashboardDay[];
+}

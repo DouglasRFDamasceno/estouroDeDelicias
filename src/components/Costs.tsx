@@ -32,27 +32,58 @@ export function Costs() {
     );
   return (
     <>
-      <div className="cost-tabs" aria-label="Cadastros de custos">
-        <button
-          type="button"
-          aria-pressed={section === 'materials'}
-          onClick={() => setSection('materials')}
-        >
-          Insumos
-        </button>
-        <button
-          type="button"
-          aria-pressed={section === 'recipes'}
-          onClick={() => setSection('recipes')}
-        >
-          Receitas e custos
-        </button>
+      <div className="cost-tabs" role="tablist" aria-label="Cadastros de custos">
+        {(
+          [
+            ['materials', 'Insumos'],
+            ['recipes', 'Receitas e custos'],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            id={`cost-tab-${key}`}
+            type="button"
+            role="tab"
+            aria-selected={section === key}
+            aria-controls={`cost-panel-${key}`}
+            tabIndex={section === key ? 0 : -1}
+            onClick={() => setSection(key)}
+            onKeyDown={(event) => {
+              let next: CostSection;
+              if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                next = key === 'materials' ? 'recipes' : 'materials';
+              } else if (event.key === 'Home') {
+                next = 'materials';
+              } else if (event.key === 'End') {
+                next = 'recipes';
+              } else {
+                return;
+              }
+              event.preventDefault();
+              setSection(next);
+              document.getElementById(`cost-tab-${next}`)?.focus();
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
       <p className="fine">
         Cadastre a compra de referência do insumo e depois a quantidade usada na receita. Exemplo: 1
         kg de chocolate por R$ 30,00 → 200 g custam R$ 6,00.
       </p>
-      <CostList key={section} section={section} />
+      {(['materials', 'recipes'] as const).map((key) => (
+        <div
+          key={key}
+          id={`cost-panel-${key}`}
+          role="tabpanel"
+          aria-labelledby={`cost-tab-${key}`}
+          hidden={section !== key}
+          tabIndex={0}
+        >
+          {section === key && <CostList section={key} />}
+        </div>
+      ))}
     </>
   );
 }

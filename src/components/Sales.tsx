@@ -31,6 +31,7 @@ const methods: Record<string, string> = {
 };
 export function Sales() {
   const { identity, identityLoading } = useAuth();
+  const [tab, setTab] = useState<'orders' | 'sales'>('orders');
   const [editing, setEditing] = useState<Sale | null>(null),
     [removing, setRemoving] = useState<Sale | null>(null);
   const [pending, setPending] = useState<{ order: PendingOrder; items: DraftSaleItem[] } | null>(
@@ -94,10 +95,54 @@ export function Sales() {
     );
   return (
     <section className="panel sales-panel">
-      <PendingOrders
-        revision={revision}
-        onReview={(order, items) => setPending({ order, items })}
-      />
+      <div className="sales-tabs" role="tablist" aria-label="Acompanhamento de vendas">
+        {(
+          [
+            ['orders', 'Pedidos recebidos'],
+            ['sales', 'Vendas registradas'],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            id={`sales-tab-${key}`}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            aria-controls={`sales-panel-${key}`}
+            tabIndex={tab === key ? 0 : -1}
+            onClick={() => setTab(key)}
+            onKeyDown={(event) => {
+              let next: 'orders' | 'sales';
+              if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                next = key === 'orders' ? 'sales' : 'orders';
+              } else if (event.key === 'Home') {
+                next = 'orders';
+              } else if (event.key === 'End') {
+                next = 'sales';
+              } else {
+                return;
+              }
+              event.preventDefault();
+              setTab(next);
+              document.getElementById(`sales-tab-${next}`)?.focus();
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div
+        id="sales-panel-orders"
+        role="tabpanel"
+        aria-labelledby="sales-tab-orders"
+        hidden={tab !== 'orders'}
+        tabIndex={0}
+      >
+        <PendingOrders
+          revision={revision}
+          onReview={(order, items) => setPending({ order, items })}
+        />
+      </div>
       {pending && (
         <SaleModal
           pendingOrder={pending.order}
@@ -105,129 +150,140 @@ export function Sales() {
           onClose={() => setPending(null)}
           onSaved={() => {
             setPending(null);
+            setTab('sales');
             setRevision((value) => value + 1);
             setPage(1);
           }}
         />
       )}
 
-      <div className="panel-heading">
-        <div>
-          <h2>Vendas registradas</h2>
-          <p>Acompanhe suas vendas e os valores a receber.</p>
-        </div>
-        <button className="sale-primary" onClick={() => setOpen(true)}>
-          + Nova venda
-        </button>
-      </div>
-      <form
-        className="sale-filter"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setFilter(search);
-          setPage(1);
-        }}
+      <div
+        id="sales-panel-sales"
+        role="tabpanel"
+        aria-labelledby="sales-tab-sales"
+        hidden={tab !== 'sales'}
+        tabIndex={0}
       >
-        <label>
-          Cliente
-          <input
-            value={search}
-            maxLength={120}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome"
-          />
-        </label>
-        <button>Filtrar</button>
-        <button
-          type="button"
-          onClick={() => {
-            setSearch('');
-            setFilter('');
+        <div className="panel-heading">
+          <div>
+            <h2>Vendas registradas</h2>
+            <p>Acompanhe suas vendas e os valores a receber.</p>
+          </div>
+          <button className="sale-primary" onClick={() => setOpen(true)}>
+            + Nova venda
+          </button>
+        </div>
+        <form
+          className="sale-filter"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setFilter(search);
             setPage(1);
           }}
         >
-          Limpar
-        </button>
-      </form>
-      {error && (
-        <p role="alert">
-          {error} <button onClick={() => setRevision((v) => v + 1)}>Recarregar</button>
-        </p>
-      )}
-      {loading ? (
-        <p role="status">Carregando vendas…</p>
-      ) : (
-        !error && (
-          <>
-            <div className="product-table-scroll">
-              <table className="product-table">
-                <thead>
-                  <tr>
-                    {(
-                      [
-                        ['sale_date', 'Data'],
-                        ['customer', 'Cliente'],
-                        ['total_cents', 'Total'],
-                      ] as const
-                    ).map(([key, label]) => (
-                      <th
-                        key={key}
-                        aria-sort={sort === key ? (ascending ? 'ascending' : 'descending') : 'none'}
-                      >
-                        <button
-                          onClick={() => {
-                            setSort(key);
-                            setAscending(sort === key ? !ascending : true);
-                            setPage(1);
-                          }}
+          <label>
+            Cliente
+            <input
+              value={search}
+              maxLength={120}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome"
+            />
+          </label>
+          <button>Filtrar</button>
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setFilter('');
+              setPage(1);
+            }}
+          >
+            Limpar
+          </button>
+        </form>
+        {error && (
+          <p role="alert">
+            {error} <button onClick={() => setRevision((v) => v + 1)}>Recarregar</button>
+          </p>
+        )}
+        {loading ? (
+          <p role="status">Carregando vendas…</p>
+        ) : (
+          !error && (
+            <>
+              <div className="product-table-scroll">
+                <table className="product-table">
+                  <thead>
+                    <tr>
+                      {(
+                        [
+                          ['sale_date', 'Data'],
+                          ['customer', 'Cliente'],
+                          ['total_cents', 'Total'],
+                        ] as const
+                      ).map(([key, label]) => (
+                        <th
+                          key={key}
+                          aria-sort={
+                            sort === key ? (ascending ? 'ascending' : 'descending') : 'none'
+                          }
                         >
-                          {label} {sort === key ? (ascending ? '↑' : '↓') : '↕'}
-                        </button>
-                      </th>
-                    ))}
-                    <th>Recebido</th>
-                    <th>A receber</th>
-                    <th>Pagamento</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((s) => (
-                    <tr key={s.id}>
-                      <td>{dateBR(s.sale_date)}</td>
-                      <td>{s.customer}</td>
-                      <td>{money(s.total_cents)}</td>
-                      <td>{money(s.received_cents)}</td>
-                      <td>{money(s.total_cents - s.received_cents)}</td>
-                      <td>{methods[s.payment_method]}</td>
-                      <td>
-                        <button type="button" onClick={() => setEditing(s)}>
-                          Editar
-                        </button>{' '}
-                        <button type="button" onClick={() => setRemoving(s)}>
-                          Remover
-                        </button>
-                      </td>
+                          <button
+                            onClick={() => {
+                              setSort(key);
+                              setAscending(sort === key ? !ascending : true);
+                              setPage(1);
+                            }}
+                          >
+                            {label} {sort === key ? (ascending ? '↑' : '↓') : '↕'}
+                          </button>
+                        </th>
+                      ))}
+                      <th>Recebido</th>
+                      <th>A receber</th>
+                      <th>Pagamento</th>
+                      <th>Ações</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {!rows.length && <p>Nenhuma venda encontrada.</p>}
-          </>
-        )
-      )}
-      <Pagination
-        page={page}
-        pageSize={size}
-        total={total}
-        disabled={loading}
-        onPage={setPage}
-        onPageSize={(v) => {
-          setSize(v);
-          setPage(1);
-        }}
-      />
+                  </thead>
+                  <tbody>
+                    {rows.map((s) => (
+                      <tr key={s.id}>
+                        <td>{dateBR(s.sale_date)}</td>
+                        <td>{s.customer}</td>
+                        <td>{money(s.total_cents)}</td>
+                        <td>{money(s.received_cents)}</td>
+                        <td>{money(s.total_cents - s.received_cents)}</td>
+                        <td>{methods[s.payment_method]}</td>
+                        <td>
+                          <button type="button" onClick={() => setEditing(s)}>
+                            Editar
+                          </button>{' '}
+                          <button type="button" onClick={() => setRemoving(s)}>
+                            Remover
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!rows.length && <p>Nenhuma venda encontrada.</p>}
+            </>
+          )
+        )}
+        <Pagination
+          page={page}
+          pageSize={size}
+          total={total}
+          disabled={loading}
+          onPage={setPage}
+          onPageSize={(v) => {
+            setSize(v);
+            setPage(1);
+          }}
+        />
+      </div>
       {removing && (
         <ConfirmRemove
           description={`Remover a venda de ${removing.customer}, em ${dateBR(removing.sale_date)}, no valor de ${money(removing.total_cents)}? Todos os itens desta venda também serão removidos.`}

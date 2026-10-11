@@ -1,0 +1,394 @@
+/* Refinamentos compartilhados; a estrutura e os breakpoints permanecem nas telas. */
+:root {
+  --ui-brand: #eb0956;
+  --ui-brand-strong: #bd0847;
+  --ui-ink: #452365;
+  --ui-muted: #715b79;
+  --ui-surface: #fff;
+  --ui-canvas: #fffaf4;
+  --ui-soft: #fff1f6;
+  --ui-border: #e8dce8;
+  --ui-radius: 14px;
+  --ui-radius-lg: 20px;
+  --ui-shadow: 0 6px 24px #45236508;
+  --ui-focus: 0 0 0 3px #eb09561c;
+}
+:where(.management-shell, .gourmet, .sale-dialog, .g-catalog-modal) {
+  -webkit-tap-highlight-color: #eb09561a;
+}
+:where(.management-shell, .gourmet, .sale-dialog, .g-catalog-modal)
+  :where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--ui-brand);
+  outline-offset: 3px;
+}
+:where(.management-shell, .gourmet, .sale-dialog, .g-catalog-modal)
+  :where(input, select, textarea) {
+  accent-color: var(--ui-brand);
+}
+.management-shell .panel {
+  border-color: var(--ui-border);
+  box-shadow: var(--ui-shadow);
+}
+.management-shell .page-heading h1 {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+.management-shell .page-heading p:not(.eyebrow),
+.management-shell .fine,
+.management-shell .panel-heading p {
+  color: var(--ui-muted);
+}
+.management-shell .panel-heading {
+  align-items: center;
+  gap: 16px;
+}
+.management-shell .panel-heading h2 {
+  line-height: 1.35;
+  text-wrap: balance;
+}
+.management-shell ion-menu ion-item {
+  --color: var(--ui-muted);
+  --background-hover: var(--ui-soft);
+}
+.management-shell ion-menu ion-item.active {
+  --color: var(--ui-brand-strong);
+  --background: var(--ui-soft);
+}
+.management-shell .workspace {
+  border-color: #f1d4e2;
+  background: #fff4f8;
+}
+.management-shell :is(.sale-filter, .product-filters) label,
+.sale-dialog label,
+.search-select > label {
+  color: var(--ui-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.management-shell :is(.sale-filter, .product-filters) input,
+.sale-dialog :is(input, select, textarea),
+.product-form :is(input, select, textarea),
+.search-select-input input {
+  min-height: 44px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  padding: 11px 13px;
+  font-size: 14px;
+  min-width: 0;
+  max-width: 100%;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+}
+.management-shell input:focus-visible,
+.sale-dialog :is(input, select, textarea):focus-visible,
+.search-select-input input:focus-visible {
+  border-color: var(--ui-brand);
+  box-shadow: var(--ui-focus);
+}
+.management-shell :is(.sale-filter, .product-filters) button,
+.management-shell .panel-heading > button,
+.management-shell .product-table td > button,
+.sale-dialog button,
+.management-shell .table-pagination button {
+  min-height: 44px;
+  border-radius: var(--ui-radius);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background 150ms,
+    border-color 150ms;
+}
+.management-shell :is(.sale-filter, .product-filters) button:not(:disabled):hover,
+.management-shell .product-table td > button:not(:disabled):hover,
+.sale-dialog button:not(.sale-primary):not(:disabled):hover,
+.management-shell .table-pagination button:not(:disabled):hover {
+  background: var(--ui-soft);
+  border-color: #e7b1c7;
+}
+.management-shell .sale-primary:not(:disabled):hover,
+.sale-dialog .sale-primary:not(:disabled):hover,
+.management-shell .product-filters button[type='submit']:not(:disabled):hover {
+  background: var(--ui-brand-strong);
+  color: white;
+}
+.management-shell .product-table-scroll {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: white;
+}
+.management-shell .product-table {
+  font-variant-numeric: tabular-nums;
+}
+.management-shell .product-table thead {
+  background: #fff3f8;
+}
+.management-shell .product-table thead th {
+  color: #9d1746;
+  font-size: 12px;
+}
+.management-shell .product-table thead button {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
+  border-radius: 4px;
+  font-size: inherit;
+  font-weight: 700;
+}
+.management-shell .product-table td,
+.management-shell .product-table tbody th {
+  font-size: 13px;
+  line-height: 1.6;
+  border-bottom-color: #f1e8f0;
+}
+.management-shell .product-table tbody tr:last-child :is(td, th) {
+  border-bottom: 0;
+}
+.management-shell .product-table tbody tr:hover {
+  background: #fffafd;
+}
+.management-shell .table-pagination {
+  color: var(--ui-muted);
+  padding-top: 16px;
+  border-top: 1px solid #f1e8f0;
+}
+.management-shell .table-pagination select {
+  min-height: 44px;
+  border-radius: 10px;
+  border-color: var(--ui-border);
+}
+.sale-dialog {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: #fff;
+  box-shadow: 0 24px 80px #30134428;
+  padding: 28px;
+  overscroll-behavior: contain;
+}
+.sale-dialog::backdrop {
+  background: #2a153b80;
+}
+.sale-dialog h2 {
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+}
+.sale-dialog h3 {
+  font-size: 15px;
+}
+.sale-dialog .sale-actions {
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--ui-border);
+  padding-top: 20px;
+  margin-top: 24px;
+}
+.search-select-popup {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: 0 12px 32px #45236516;
+}
+.search-select-popup button {
+  min-height: 44px;
+}
+.management-shell :is(.pending-order-list > li, .recipe-lines li) {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: #fffcfe;
+}
+.management-shell .pending-order-list h3 {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.login-screen .login-intro,
+.login-screen .login-back,
+.login-screen .login-signup,
+.login-screen .login-stage-note span {
+  color: var(--ui-muted);
+}
+.login-screen .login-story {
+  border-color: #ecd7e5;
+  box-shadow: var(--ui-shadow);
+}
+.login-screen .login-form input {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius);
+  font-size: 16px;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+}
+.login-screen .login-form input:focus {
+  border-color: var(--ui-brand);
+  box-shadow: var(--ui-focus);
+}
+.login-screen .login-form-panel h2 {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+.login-screen .login-stage-note,
+.login-screen .login-feedback:not(:empty) {
+  background: var(--ui-soft);
+  color: var(--ui-ink);
+  border-radius: 12px;
+  padding: 14px 16px;
+  line-height: 1.7;
+}
+.login-screen .login-form fieldset {
+  min-width: 0;
+}
+.login-screen .login-intro,
+.login-screen .login-feedback {
+  overflow-wrap: anywhere;
+}
+.landing-modern .g-button,
+.login-screen .g-button {
+  min-height: 44px;
+  transition:
+    background 150ms,
+    box-shadow 150ms;
+}
+.landing-modern .g-button:hover,
+.login-screen .g-button:hover {
+  box-shadow: 0 4px 0 #b9004430;
+}
+.landing-modern .g-catalog-description,
+.landing-modern .g-catalog-count,
+.landing-modern .g-lead {
+  color: var(--ui-muted);
+}
+.landing-modern .landing-faq summary {
+  line-height: 1.5;
+}
+.landing-modern .landing-faq summary:focus-visible {
+  border-radius: 8px;
+}
+.landing-modern .g-moment-stack article {
+  border-color: var(--ui-border);
+}
+.g-catalog-modal {
+  --border-radius: 24px;
+  --box-shadow: 0 24px 80px #30134430;
+}
+.g-catalog-modal .landing-search input {
+  min-height: 48px;
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius);
+  font-size: 16px;
+}
+.g-catalog-modal .landing-order {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow);
+}
+.g-catalog-modal .g-flavor {
+  border-color: var(--ui-border);
+  box-shadow: var(--ui-shadow);
+}
+.g-catalog-modal :is(.landing-add, .landing-heart, .landing-quantity button, .g-catalog-close) {
+  min-width: 44px;
+  min-height: 44px;
+}
+.g-catalog-modal .landing-selection-link {
+  min-height: 44px;
+  line-height: 1.5;
+}
+.g-catalog-modal .landing-flavor-note,
+.g-catalog-modal .landing-order-disclaimer {
+  color: var(--ui-muted);
+}
+@media (max-width: 700px) {
+  .management-shell .panel-heading {
+    flex-wrap: wrap;
+  }
+  .management-shell .panel-heading > div {
+    min-width: 0;
+  }
+  .management-shell .panel {
+    border-radius: 16px;
+  }
+  .management-shell :is(.sale-filter, .product-filters) input,
+  .sale-dialog :is(input, select, textarea),
+  .search-select-input input {
+    font-size: 16px;
+  }
+  .sale-dialog {
+    padding: 20px 16px;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  .sale-dialog .sale-cart li {
+    min-width: 0;
+  }
+  .management-shell .table-pagination > div {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .g-catalog-modal {
+    --border-radius: 0;
+  }
+  .g-catalog-modal ion-title {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.management-shell, .gourmet, .sale-dialog, .g-catalog-modal)
+    :is(button, a, input, select, textarea) {
+    transition: none;
+  }
+}
+
+.auth-single .login-form input {
+  font-size: 16px;
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius);
+}
+.auth-single .login-form input:focus-visible {
+  outline: 3px solid var(--ui-brand);
+  outline-offset: 3px;
+}
+.notice {
+  color: var(--ui-ink);
+  background: var(--ui-canvas);
+}
+.notice .button {
+  background: var(--ui-brand);
+  color: white;
+  border-radius: var(--ui-radius);
+  min-height: 44px;
+}
+.notice .text-link,
+.notice .eyebrow {
+  color: var(--ui-brand-strong);
+}
+
+.management-shell .panel [role='alert'],
+.sale-dialog [role='alert'] {
+  border-left: 3px solid var(--ui-brand);
+  background: var(--ui-soft);
+  color: #84213e;
+  padding: 12px 14px;
+  border-radius: 8px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.g-catalog-modal :is(button, a):focus-visible {
+  outline: 3px solid var(--ui-brand);
+  outline-offset: 3px;
+}
+.search-select-popup li.focused {
+  background: var(--ui-soft);
+  box-shadow: inset 3px 0 var(--ui-brand);
+}
+
+@media (min-width: 701px) {
+  .landing-modern .g-hero {
+    align-items: start;
+    margin-top: 0;
+    padding-top: 24px;
+  }
+  .landing-modern .g-hero-copy {
+    padding-top: 24px;
+  }
+}

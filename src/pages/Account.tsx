@@ -7,11 +7,12 @@ import { requireSupabase } from '../services/supabase';
 import { emptyProfile, normalizeProfile, profileFields, validateProfile } from '../domain/profile';
 import { formatProfileInput } from '../domain/profileInput';
 import { fetchPostalAddress } from '../services/postalAddress';
+import { logoutCurrentSession } from '../services/logout';
 import type { Profile } from '../domain/profile';
 const labels: Record<keyof Profile, string> = { full_name: 'Nome completo', phone: 'Telefone com DDD', document: 'CPF (opcional)', postal_code: 'CEP', street: 'Rua / avenida', address_number: 'Número', complement: 'Complemento', district: 'Bairro', city: 'Cidade', state: 'UF' };
 const lengths: Record<keyof Profile, number> = { full_name: 120, phone: 16, document: 14, postal_code: 9, street: 160, address_number: 20, complement: 120, district: 100, city: 100, state: 2 };
 export function Account() {
-  const { session, loading } = useAuth();
+  const { session, loading, refreshIdentity } = useAuth();
   const location = useLocation();
   const [profile, setProfile] = useState<Profile>(emptyProfile);
   const [fetching, setFetching] = useState(true);
@@ -93,13 +94,13 @@ export function Account() {
       const values = Object.fromEntries(profileFields.map(key => [key, normalized[key] || null]));
       const { data: updated, error } = await client.from('profiles').update(values).eq('id', data.user.id).select('id').single();
       if (error || !updated) throw new Error('SAVE');
-      setProfile(normalized); setMessage('Perfil atualizado com sucesso.');
+      setProfile(normalized); refreshIdentity(); setMessage('Perfil atualizado com sucesso.');
     } catch { setMessage('Não foi possível salvar. Confira os campos e tente novamente.'); }
     finally { setBusy(false); }
   }
   async function logout() {
     setBusy(true);
-    try { const { error } = await requireSupabase().auth.signOut(); if (error) throw error; setProfile(emptyProfile); }
+    try { await logoutCurrentSession(); }
     catch { setMessage('Não foi possível sair. Verifique a conexão e tente novamente.'); }
     finally { setBusy(false); }
   }

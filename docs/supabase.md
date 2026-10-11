@@ -56,9 +56,14 @@ Obtenha a URL e a **publishable key** no painel do projeto. O código aceita ape
 
 Authentication → URL Configuration:
 
-- Site URL de desenvolvimento: `http://127.0.0.1:5173`.
-- Redirect permitido: `http://127.0.0.1:5173/auth/callback`.
-- Redirect permitido: `http://127.0.0.1:5173/auth/recovery`.
+No projeto de produção, salvar:
+
+- **Site URL:** `https://estouro-de-delicias.vercel.app` (sem barra final).
+- **Redirect URLs:** `https://estouro-de-delicias.vercel.app/auth/callback`.
+- **Redirect URLs:** `https://estouro-de-delicias.vercel.app/auth/invite`.
+- **Redirect URLs:** `https://estouro-de-delicias.vercel.app/auth/recovery`.
+
+Não manter localhost como Site URL do projeto de produção. Endereços locais, quando necessários para desenvolvimento, são redirects adicionais exatos, não a URL principal. Para convites enviados pelo próprio painel Supabase, usar o template `supabase/templates/invite.html`; ele usa SiteURL e o callback de convite, mesmo sem redirectTo informado.
 
 Se usar localhost ou outra porta, cadastrar os dois endereços correspondentes e acessar pelo mesmo hostname. Produção exigirá URLs HTTPS exatas; evitar curingas de produção. O código usa a origem atual, nunca um parâmetro arbitrário `next`/redirect. Manter os templates de e-mail usando `{{ .ConfirmationURL }}` para o fluxo padrão de confirmação. PKCE depende do verificador no navegador que iniciou o fluxo: abrir o link no mesmo navegador/perfil. Links expirados, repetidos ou de outro navegador podem exigir novo pedido. O SDK processa o código automaticamente, sem troca manual duplicada. Nunca copiar tokens em logs ou suporte.
 

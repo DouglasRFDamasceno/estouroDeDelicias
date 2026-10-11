@@ -37,13 +37,15 @@ Antes de usar, fazer deploy da função e configurar o segredo servidor `APP_ORI
 
 ## Template e aceite de convite
 
-No template **Invite user**, configurar o link usando o token hash (não o link implícito padrão), apontando para a origem permitida:
+Em **Authentication → URL Configuration**, definir Site URL como `https://estouro-de-delicias.vercel.app` (sem barra final) e adicionar o redirect exato `https://estouro-de-delicias.vercel.app/auth/invite`. Acrescentar também os callbacks `/auth/callback` e `/auth/recovery` nessa mesma origem.
+
+Em **Authentication → Email Templates → Invite user**, copiar `supabase/templates/invite.html`. O link usa SiteURL, para funcionar também com os convites feitos diretamente no painel, sem depender de redirectTo informado:
 
 ```html
-<a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}">Aceitar convite e definir minha senha</a>
+<a href="{{ .SiteURL }}/auth/invite?token_hash={{ .TokenHash }}">Aceitar convite e definir minha senha</a>
 ```
 
-Cadastrar `/auth/invite` como redirect permitido para a origem escolhida. O remetente passa esse caminho fixo; não aceita URL de retorno enviada pelo navegador. O callback verifica o hash como `type: invite`, define sessão pelo SDK e permite definir a senha (mínimo 12 caracteres também configurado no servidor). Ao concluir, encerra a sessão e solicita novo login. A URL é limpa após a verificação. Não compartilhar o link: ele concede acesso à conta.
+Salvar as configurações e solicitar um convite novo: e-mails já enviados não são reescritos. O remetente passa esse caminho fixo; não aceita URL de retorno enviada pelo navegador. O callback verifica o hash como `type: invite`, define sessão pelo SDK e permite definir a senha (mínimo 12 caracteres também configurado no servidor). Ao concluir, encerra a sessão e solicita novo login. A URL é limpa após a verificação. Não compartilhar o link: ele concede acesso à conta.
 
 SMTP deve estar configurado para envio a usuários reais. Antes de produção, testar rate limits de convite, SPF/DKIM, expiração/reutilização de links, convite com usuário logado em outra conta e MFA para administradores. Ainda não existe MFA obrigatório na função; não considerar esta implementação pronta para exposição pública sem essa revisão.
 

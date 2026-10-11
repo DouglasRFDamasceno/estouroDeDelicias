@@ -39,8 +39,8 @@ do $$ declare target uuid; affected integer; begin
   raise exception 'Preço negativo aceito';
  exception when check_violation then null; end;
  begin
-  update public.products set price_cents=0;
-  raise exception 'UPDATE liberado';
+  update public.products set created_at=now();
+  raise exception 'Alteração de campo protegido liberada';
  exception when insufficient_privilege then null; end;
  select id into target from public.products where name='Brownie de teste';
  delete from public.products where id=target;

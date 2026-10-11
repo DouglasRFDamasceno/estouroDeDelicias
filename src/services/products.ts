@@ -8,7 +8,7 @@ export const emptyProductFilters: ProductFilters = { name: '', category: '', pre
 export async function loadProducts(options: { page: number; pageSize: number; sort: ProductSort; ascending: boolean; filters: ProductFilters; signal: AbortSignal }) {
   const { from, to } = pageRange(options.page, options.pageSize);
   if (!productSortColumns.includes(options.sort)) throw new Error('Ordenação inválida.');
-  let query = requireSupabase().from('products').select('id,name,category,presentation,price_cents', { count: 'exact' });
+  let query = requireSupabase().from('products').select('id,name,category,presentation,price_cents,revision', { count: 'exact' });
   for (const column of ['name', 'category', 'presentation'] as const) {
     const value = options.filters[column].trim();
     if (value.length > 120) throw new Error('Filtro muito longo.');

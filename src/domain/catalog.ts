@@ -1,4 +1,5 @@
 export interface CatalogProduct {
+  revision: number;
   id: string;
   name: string;
   category: string;
@@ -6,7 +7,7 @@ export interface CatalogProduct {
   price_cents: number;
 }
 export interface ProductDraft { name: string; category: string; presentation: string; price: string; }
-export function parseProductDraft(draft: ProductDraft): Omit<CatalogProduct, 'id'> {
+export function parseProductDraft(draft: ProductDraft): Omit<CatalogProduct, 'id' | 'revision'> {
   const name = draft.name.trim();
   const category = draft.category.trim();
   const presentation = draft.presentation.trim();

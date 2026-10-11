@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { requireSupabase } from '../services/supabase';
+import { EditProduct } from './EditProduct';
 import { Pagination } from './Pagination';
 import { totalPages } from '../domain/pagination';
 import { emptyProductFilters, loadProducts, productSortColumns } from '../services/products';
@@ -33,6 +34,7 @@ export function Products() {
   }
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [editing, setEditing] = useState<CatalogProduct | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
@@ -103,7 +105,7 @@ export function Products() {
       const client = requireSupabase();
       const verified = await client.auth.getUser();
       if (verified.error || verified.data.user?.id !== owner || currentUser.current !== owner) throw new Error('AUTH');
-      const { data, error } = await client.from('products').delete().eq('id', productId).select('id').single();
+      const { data, error } = await client.from('products').delete().eq('id', productId).eq('revision', removing.revision).select('id').single();
       if (currentUser.current !== owner) return;
       if (error || !data || data.id !== productId) {
         setRemoveError(error?.code === '23503' ? 'Este produto está vinculado a outros registros e não pode ser removido.' : 'Não foi possível confirmar a remoção. Confira sua permissão e conexão. O produto pode já ter sido removido; atualize o catálogo para verificar.');
@@ -122,11 +124,12 @@ export function Products() {
     {loading ? <p role="status">Carregando produtos…</p> : error ? <><p role="alert">{error}</p><button type="button" className="g-button" onClick={() => setRetry(value => value + 1)}>Tentar novamente</button></> : <>
       {open && canManage && <form className="login-form product-form" onSubmit={submit}><h3>Novo produto</h3><fieldset disabled={busy}><label htmlFor="product-name">Nome do produto</label><input id="product-name" name="name" required minLength={2} maxLength={120} placeholder="Ex.: Brownie de chocolate" autoFocus /><label htmlFor="product-category">Categoria</label><input id="product-category" name="category" required minLength={2} maxLength={80} placeholder="Ex.: Doces" /><label htmlFor="product-presentation">Apresentação / unidade de venda</label><input id="product-presentation" name="presentation" required maxLength={80} placeholder="Ex.: Unidade, caixa com 6 ou 100 g" /><label htmlFor="product-price">Preço de venda (R$)</label><input id="product-price" name="price" required inputMode="decimal" maxLength={10} placeholder="16,00" aria-describedby="product-price-help" /><p id="product-price-help">Use vírgula para centavos, sem separador de milhares.</p><div className="product-actions"><button className="g-button" type="submit">{busy ? 'Salvando…' : 'Salvar produto'}</button><button type="button" className="text-link" onClick={() => { setOpen(false); setMessage(''); }}>Cancelar</button></div></fieldset></form>}
       {catalog && catalog.owner === userId && <>
-        {catalog.rows.length ? <div className="product-table-scroll"><table className="product-table"><caption className="sr-only">Produtos cadastrados</caption><thead><tr>{productSortColumns.map(column => <th key={column} scope="col" aria-sort={sort.column === column ? (sort.ascending ? 'ascending' : 'descending') : 'none'}><button type="button" disabled={busy} onClick={() => orderBy(column)}>{columnLabels[column]} <span aria-hidden="true">{sort.column === column ? (sort.ascending ? '↑' : '↓') : '↕'}</span></button></th>)}{canManage && <th scope="col">Ações</th>}</tr></thead><tbody>{catalog.rows.map(product => <tr key={product.id}><th scope="row">{product.name}</th><td>{product.category}</td><td>{product.presentation}</td><td className="product-price-cell">{money(product.price_cents)}</td>{canManage && <td><button type="button" className="product-remove-button" disabled={busy} aria-label={`Remover ${product.name}, ${product.presentation}`} onClick={() => { setRemoving(product); setRemoveError(''); }}>Remover</button></td>}</tr>)}</tbody></table></div> : <p>Nenhum produto encontrado com esses filtros.</p>}
+        {catalog.rows.length ? <div className="product-table-scroll"><table className="product-table"><caption className="sr-only">Produtos cadastrados</caption><thead><tr>{productSortColumns.map(column => <th key={column} scope="col" aria-sort={sort.column === column ? (sort.ascending ? 'ascending' : 'descending') : 'none'}><button type="button" disabled={busy} onClick={() => orderBy(column)}>{columnLabels[column]} <span aria-hidden="true">{sort.column === column ? (sort.ascending ? '↑' : '↓') : '↕'}</span></button></th>)}{canManage && <th scope="col">Ações</th>}</tr></thead><tbody>{catalog.rows.map(product => <tr key={product.id}><th scope="row">{product.name}</th><td>{product.category}</td><td>{product.presentation}</td><td className="product-price-cell">{money(product.price_cents)}</td>{canManage && <td><button type="button" disabled={busy} onClick={() => setEditing(product)}>Editar</button> <button type="button" className="product-remove-button" disabled={busy} aria-label={`Remover ${product.name}, ${product.presentation}`} onClick={() => { setRemoving(product); setRemoveError(''); }}>Remover</button></td>}</tr>)}</tbody></table></div> : <p>Nenhum produto encontrado com esses filtros.</p>}
         <Pagination page={page} pageSize={pageSize} total={catalog.total} disabled={busy || loading} onPage={setPage} onPageSize={size => { setPageSize(size); setPage(1); }} />
       </>}
       {!canManage && <p>O cadastro e a remoção de produtos são reservados aos administradores.</p>}
     </>}
+    {editing && canManage && <EditProduct product={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setRetry(v => v + 1); setMessage('Produto atualizado com sucesso.'); }} />}
     <dialog ref={dialog} className="product-remove-dialog" aria-labelledby="remove-product-title" aria-describedby="remove-product-description" onCancel={event => { if (busy) event.preventDefault(); else setRemoving(null); }} onClose={() => { if (!busy) setRemoving(null); }}>
       <h2 id="remove-product-title">Remover produto?</h2>
       <p id="remove-product-description">Você vai remover <strong>{removing?.name}</strong>, apresentação <strong>{removing?.presentation}</strong>, do catálogo compartilhado. Essa ação não pode ser desfeita.</p>

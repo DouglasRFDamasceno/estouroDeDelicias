@@ -4,6 +4,11 @@ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 ('00000000-0000-0000-0000-000000000011','catalog-admin@example.invalid',now(),'{}'),
 ('00000000-0000-0000-0000-000000000012','catalog-member@example.invalid',now(),'{"is_admin":true}'),
 ('00000000-0000-0000-0000-000000000013','catalog-unconfirmed@example.invalid',null,'{}');
+-- Sessões fictícias reais no banco; um JWT sem sessão não autoriza acesso.
+insert into auth.sessions(id,user_id,created_at)
+select id,id,statement_timestamp() from auth.users
+where id in ('00000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000012','00000000-0000-0000-0000-000000000013');
+
 update public.profiles set is_admin=true where id='00000000-0000-0000-0000-000000000011';
 do $$ begin
  if has_table_privilege('anon','public.products','SELECT') then raise exception 'Anon tem leitura'; end if;
@@ -13,6 +18,7 @@ do $$ begin
 end $$;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000012',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000012','role','authenticated','session_id','00000000-0000-0000-0000-000000000012')::text,true);
 do $$ declare affected integer; begin
  delete from public.products;
  get diagnostics affected = row_count;
@@ -24,10 +30,12 @@ do $$ declare affected integer; begin
  exception when insufficient_privilege then null; end;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000013',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000013','role','authenticated','session_id','00000000-0000-0000-0000-000000000013')::text,true);
 do $$ begin
  if exists(select 1 from public.products) then raise exception 'Não confirmado conseguiu consultar'; end if;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000011',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000011','role','authenticated','session_id','00000000-0000-0000-0000-000000000011')::text,true);
 do $$ declare target uuid; affected integer; begin
  insert into public.products(name,category,presentation,price_cents) values ('Brownie de teste','Doces','Caixa com 6',1605);
  begin

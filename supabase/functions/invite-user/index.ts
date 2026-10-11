@@ -30,6 +30,13 @@ Deno.serve(async (request) => {
       error: authError,
     } = await privileged.auth.getUser(token);
     if (authError || !user?.email_confirmed_at) return reply(401, 'Entre novamente.');
+    // A RPC precisa receber o JWT do usuário, não o Bearer service_role.
+    const caller = createClient(url, secret, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: validSession, error: sessionError } = await caller.rpc('current_session_valid');
+    if (sessionError || validSession !== true) return reply(401, 'Entre novamente.');
     const { data: profile, error: roleError } = await privileged
       .from('profiles')
       .select('is_admin')

@@ -2,9 +2,15 @@ begin;
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 ('00000000-0000-0000-0000-000000000041','customer-admin@example.invalid',now(),'{}'),
 ('00000000-0000-0000-0000-000000000042','customer-member@example.invalid',now(),'{"is_admin":true}');
+-- Sessões fictícias reais no banco; um JWT sem sessão não autoriza acesso.
+insert into auth.sessions(id,user_id,created_at)
+select id,id,statement_timestamp() from auth.users
+where id in ('00000000-0000-0000-0000-000000000041','00000000-0000-0000-0000-000000000042');
+
 update public.profiles set is_admin=true where id='00000000-0000-0000-0000-000000000041';
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000041',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000041','role','authenticated','session_id','00000000-0000-0000-0000-000000000041')::text,true);
 do $$ declare cid uuid; sid uuid; product public.products%rowtype; begin
  insert into public.customers(name) values('Cliente real') returning id into cid;
  select * into product from public.products limit 1;
@@ -20,6 +26,7 @@ do $$ declare cid uuid; sid uuid; product public.products%rowtype; begin
  exception when insufficient_privilege then null; end;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000042',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000042','role','authenticated','session_id','00000000-0000-0000-0000-000000000042')::text,true);
 do $$ begin
  if exists(select 1 from public.customers) then raise exception 'Cliente exposto'; end if;
  begin insert into public.customers(name) values('Cliente indevido'); raise exception 'Membro inseriu cliente' using errcode='ZX001'; exception when insufficient_privilege then null; end;

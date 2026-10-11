@@ -3,9 +3,15 @@ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 ('00000000-0000-0000-0000-000000000081','dashboard-admin@example.invalid',now(),'{}'),
 ('00000000-0000-0000-0000-000000000082','dashboard-member@example.invalid',now(),'{"is_admin":true}'),
 ('00000000-0000-0000-0000-000000000083','dashboard-unconfirmed@example.invalid',null,'{}');
+-- Sessões fictícias reais no banco; um JWT sem sessão não autoriza acesso.
+insert into auth.sessions(id,user_id,created_at)
+select id,id,statement_timestamp() from auth.users
+where id in ('00000000-0000-0000-0000-000000000081','00000000-0000-0000-0000-000000000082','00000000-0000-0000-0000-000000000083');
+
 update public.profiles set is_admin=true where id in ('00000000-0000-0000-0000-000000000081','00000000-0000-0000-0000-000000000083');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000081',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000081','role','authenticated','session_id','00000000-0000-0000-0000-000000000081')::text,true);
 do $$ declare p1 uuid; p2 uuid; mid uuid; r1 uuid:=gen_random_uuid(); r2 uuid:=gen_random_uuid(); sid uuid; data jsonb; request uuid; lines jsonb:='[]'; pid uuid; idx integer; begin
  data:=public.dashboard_summary('2020-02-01','2020-02-29');
  if (data->>'sale_count')::int<>0 or (data->>'revenue_cents')::bigint<>0 or data->'estimated_gross_margin_cents'<>'null'::jsonb then raise exception 'Período vazio inventou dados'; end if;
@@ -44,11 +50,13 @@ do $$ declare p1 uuid; p2 uuid; mid uuid; r1 uuid:=gen_random_uuid(); r2 uuid:=g
  begin perform public.dashboard_products('2020-02-01','2020-02-29',1,999,'name',true); raise exception 'Página sem limite aceita' using errcode='ZX001'; exception when sqlstate 'P0001' then null; end;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000082',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000082','role','authenticated','session_id','00000000-0000-0000-0000-000000000082')::text,true);
 do $$ begin
  begin perform public.dashboard_summary('2020-02-01','2020-02-29'); raise exception 'Membro acessou indicadores' using errcode='ZX001'; exception when insufficient_privilege then null; end;
  begin perform public.dashboard_products('2020-02-01','2020-02-29',1,10,'name',true); raise exception 'Membro acessou ranking' using errcode='ZX001'; exception when insufficient_privilege then null; end;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000083',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000083','role','authenticated','session_id','00000000-0000-0000-0000-000000000083')::text,true);
 do $$ begin
  begin perform public.dashboard_summary('2020-02-01','2020-02-29'); raise exception 'Não confirmado acessou' using errcode='ZX001'; exception when insufficient_privilege then null; end;
 end $$;

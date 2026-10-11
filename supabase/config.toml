@@ -3,8 +3,8 @@
 [functions.invite-user]
 verify_jwt = false
 
-# Hosted projects: configure the same limits under Authentication > Sessions.
-# These settings in this file apply to the local Supabase environment.
+# Somente ambiente local. O projeto hospedado não precisa de plano Pro:
+# a migração server_session_deadline aplica o limite de 72h aos dados/RPCs.
 [auth.sessions]
 timebox = "72h"
 inactivity_timeout = "72h"

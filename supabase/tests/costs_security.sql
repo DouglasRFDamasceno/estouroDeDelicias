@@ -3,9 +3,15 @@ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 ('00000000-0000-0000-0000-000000000071','cost-admin@example.invalid',now(),'{}'),
 ('00000000-0000-0000-0000-000000000072','cost-member@example.invalid',now(),'{"is_admin":true}'),
 ('00000000-0000-0000-0000-000000000073','cost-unconfirmed@example.invalid',null,'{}');
+-- Sessões fictícias reais no banco; um JWT sem sessão não autoriza acesso.
+insert into auth.sessions(id,user_id,created_at)
+select id,id,statement_timestamp() from auth.users
+where id in ('00000000-0000-0000-0000-000000000071','00000000-0000-0000-0000-000000000072','00000000-0000-0000-0000-000000000073');
+
 update public.profiles set is_admin=true where id in ('00000000-0000-0000-0000-000000000071','00000000-0000-0000-0000-000000000073');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000071',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000071','role','authenticated','session_id','00000000-0000-0000-0000-000000000071')::text,true);
 do $$ declare mid uuid; pid uuid; rid uuid:=gen_random_uuid(); req uuid:=gen_random_uuid(); rev integer; begin
  insert into public.materials(name,purchase_quantity,purchase_unit,price_cents) values('Chocolate teste',1,'kg',3000) returning id into mid;
  select id into pid from public.products limit 1;
@@ -32,12 +38,14 @@ do $$ declare mid uuid; pid uuid; rid uuid:=gen_random_uuid(); req uuid:=gen_ran
  if not exists(select 1 from public.recipe_costs where name='Receita líquida' and total_cents=150) then raise exception 'Conversão ml/l incorreta'; end if;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000072',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000072','role','authenticated','session_id','00000000-0000-0000-0000-000000000072')::text,true);
 do $$ declare n integer; begin
  if exists(select 1 from public.recipe_costs) or exists(select 1 from public.materials) then raise exception 'Dados expostos ao membro'; end if;
  begin insert into public.materials(name,purchase_quantity,purchase_unit,price_cents) values('Indevido',1,'kg',3000); raise exception 'Membro cadastrou' using errcode='ZX001'; exception when insufficient_privilege then null; end;
  begin perform public.save_recipe(gen_random_uuid(),0,gen_random_uuid(),'Indevida',null,10,'','[]'); raise exception 'Membro criou receita' using errcode='ZX001'; exception when insufficient_privilege then null; end;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000073',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000073','role','authenticated','session_id','00000000-0000-0000-0000-000000000073')::text,true);
 do $$ begin
  begin perform public.save_recipe(gen_random_uuid(),0,gen_random_uuid(),'Indevida',null,10,'','[]'); raise exception 'Não confirmado criou' using errcode='ZX001'; exception when insufficient_privilege then null; end;
 end $$;

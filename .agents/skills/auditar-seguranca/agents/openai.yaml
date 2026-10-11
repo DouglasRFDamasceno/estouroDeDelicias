@@ -1,0 +1,3 @@
+interface:
+  display_name: "Auditar segurança"
+  short_description: "Auditoria de vulnerabilidades e correções verificadas"

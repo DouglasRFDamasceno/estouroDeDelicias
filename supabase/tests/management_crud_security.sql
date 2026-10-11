@@ -3,9 +3,15 @@ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 ('00000000-0000-0000-0000-000000000061','crud-admin@example.invalid',now(),'{}'),
 ('00000000-0000-0000-0000-000000000062','crud-member@example.invalid',now(),'{"is_admin":true}'),
 ('00000000-0000-0000-0000-000000000063','crud-unconfirmed@example.invalid',null,'{}');
+-- Sessões fictícias reais no banco; um JWT sem sessão não autoriza acesso.
+insert into auth.sessions(id,user_id,created_at)
+select id,id,statement_timestamp() from auth.users
+where id in ('00000000-0000-0000-0000-000000000061','00000000-0000-0000-0000-000000000062','00000000-0000-0000-0000-000000000063');
+
 update public.profiles set is_admin=true where id in ('00000000-0000-0000-0000-000000000061','00000000-0000-0000-0000-000000000063');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000061',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000061','role','authenticated','session_id','00000000-0000-0000-0000-000000000061')::text,true);
 do $$
 declare pid uuid; cid uuid; sid uuid; iid uuid; rev integer; request uuid:=gen_random_uuid(); n integer;
 begin
@@ -42,6 +48,7 @@ begin
  if exists(select 1 from public.sale_items where sale_id=sid) then raise exception 'Itens órfãos'; end if;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000062',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000062','role','authenticated','session_id','00000000-0000-0000-0000-000000000062')::text,true);
 do $$ declare n integer; begin
  update public.products set name='Inválido'; get diagnostics n=row_count; if n<>0 then raise exception 'Membro editou produtos'; end if;
  update public.customers set name='Inválido'; get diagnostics n=row_count; if n<>0 then raise exception 'Membro editou clientes'; end if;
@@ -50,6 +57,7 @@ do $$ declare n integer; begin
  begin perform public.update_sale(gen_random_uuid(),1,gen_random_uuid(),null,'',current_date,0,'pending','','[]'); raise exception 'Membro editou venda' using errcode='ZX001'; exception when insufficient_privilege then null; end;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000063',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000063','role','authenticated','session_id','00000000-0000-0000-0000-000000000063')::text,true);
 do $$ declare n integer; begin
  update public.products set name='Inválido'; get diagnostics n=row_count; if n<>0 then raise exception 'Não confirmado editou'; end if;
  begin perform public.update_sale(gen_random_uuid(),1,gen_random_uuid(),null,'',current_date,0,'pending','','[]'); raise exception 'Não confirmado editou venda' using errcode='ZX001'; exception when insufficient_privilege then null; end;

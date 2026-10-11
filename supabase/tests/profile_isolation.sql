@@ -4,13 +4,18 @@ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 ('00000000-0000-0000-0000-000000000001','test-a@example.invalid',now(),'{"full_name":"Pessoa A","role":"admin","is_admin":true}'),
 ('00000000-0000-0000-0000-000000000002','test-b@example.invalid',now(),'{"full_name":"Pessoa B"}'),
 ('00000000-0000-0000-0000-000000000003','test-c@example.invalid',null,'{}');
+-- Sessões fictícias reais no banco; um JWT sem sessão não autoriza acesso.
+insert into auth.sessions(id,user_id,created_at)
+select id,id,statement_timestamp() from auth.users
+where id in ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000003');
+
 do $$ begin
  if (select count(*) from public.profiles where id in ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000003')) <> 3 then raise exception 'Trigger não criou os perfis'; end if;
  if has_table_privilege('anon','public.profiles','SELECT') then raise exception 'Anon pode consultar'; end if;
 end $$;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
-select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"00000000-0000-0000-0000-000000000001"}',true);
 do $$ declare affected integer; begin
  if (select is_admin from public.profiles where id='00000000-0000-0000-0000-000000000001') then raise exception 'Metadados promoveram usuário'; end if;
  begin
@@ -42,7 +47,7 @@ do $$ declare affected integer; begin
  exception when insufficient_privilege then null; end;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000003',true);
-select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000003","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000003","role":"authenticated","session_id":"00000000-0000-0000-0000-000000000003"}',true);
 do $$ begin
  if exists(select 1 from public.profiles) then raise exception 'Conta não confirmada pode ler'; end if;
 end $$;

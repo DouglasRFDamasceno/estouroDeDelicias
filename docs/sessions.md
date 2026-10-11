@@ -20,6 +20,20 @@ Sessões anteriores à implantação, sem metadados de prazo, exigem novo login 
 
 ### Configuração do Supabase hospedado
 
-Em **Authentication > Sessions**, definir **Time-box user sessions = 72 horas** e **Inactivity timeout = 72 horas**. A configuração nativa exige plano Pro ou superior. `supabase/config.toml` registra `timebox = "72h"` e `inactivity_timeout = "72h"` para o ambiente local; editar esse arquivo não altera o projeto hospedado. As ferramentas conectadas nesta sessão não oferecem atualização das configurações de Auth; por decisão do responsável, os limites remotos não serão configurados e a política de 72 horas será aplicada somente pelo aplicativo.
+O projeto mantém o plano atual, sem contratar Pro. A migração `20261011000100_server_session_deadline.sql` impõe o limite absoluto de 72 horas no PostgreSQL, usando o `session_id` do JWT validado pelo gateway e a data `auth.sessions.created_at`, comparados ao relógio do servidor. Não confia em `iat`, relógio do dispositivo ou localStorage. Sessão inexistente, de outro usuário, com data futura ou com `not_after` vencido é recusada. O limite é exclusivo: ao completar 72 horas, novas operações protegidas são negadas.
 
-No servidor, inatividade significa ausência de renovação de token, enquanto na interface significa ausência de interação humana. O Supabase verifica esses limites na renovação e um JWT emitido pode continuar válido até expirar; manter a expiração usual de JWT (1 hora), sem aumentá-la para três dias. Referências: [sessões](https://supabase.com/docs/guides/auth/sessions) e [configuração local](https://supabase.com/docs/guides/local-development/cli/config).
+O controle foi integrado a `private.confirmed_user()`, já usado pelas policies de perfis/catálogo/negócio e pelas RPCs. A RPC `current_session_valid()` só responde sobre a sessão do próprio chamador. A função `invite-user` consulta essa RPC com o Bearer do usuário antes de usar suas credenciais administrativas. O navegador não recebe acesso a `auth.sessions` nem ao helper privado. Credenciais de serviço continuam privilegiadas e devem permanecer somente no servidor.
+
+Para ativar no ambiente hospedado, aplicar a nova migração após as anteriores e publicar a versão atualizada de `invite-user`. Estas etapas remotas ainda não foram executadas. Publicar a função antes da migração faz convites falharem de forma segura enquanto a RPC estiver ausente. Não é necessário alterar plano ou habilitar controles pagos do Auth.
+
+O Auth ainda pode emitir/renovar tokens após 72h; esses tokens não autorizam os dados e operações protegidos do aplicativo. A alteração não modifica os endpoints internos do Auth (por exemplo, alteração da senha do próprio usuário), nem adiciona políticas a buckets/serviços futuros. Novas funcionalidades devem adotar o mesmo controle. A inatividade humana continua medida somente na interface; como o prazo absoluto também é 72h, ele já limita a duração máxima. Dados já entregues e requisições iniciadas antes do limite não são retroativamente removidos.
+
+`supabase/config.toml` mantém os controles nativos apenas para desenvolvimento local. A configuração nativa hospedada é opcional, exige plano compatível e não faz parte desta solução.
+
+Nos controles nativos opcionais do Supabase, inatividade significa ausência de renovação de token, enquanto na interface significa ausência de interação humana. O Supabase verifica esses limites na renovação e um JWT emitido pode continuar válido até expirar; manter a expiração usual de JWT (1 hora), sem aumentá-la para três dias. Referências: [sessões](https://supabase.com/docs/guides/auth/sessions) e [configuração local](https://supabase.com/docs/guides/local-development/cli/config).
+
+### Verificação local
+
+Executar todos os arquivos `supabase/tests/*.sql` como postgres em banco local/de testes após as migrações. As fixtures agora incluem sessões e o claim `session_id`. `session_deadline_security.sql` verifica sessões recentes, imediatamente antes do limite, no limite, vencidas, revogadas, com ID inválido/ausente e de outro usuário; valida leitura/escrita/RPCs negadas e acesso legítimo preservado. Tudo termina em rollback. Nunca executar essas fixtures em produção.
+
+Para testar o handler de convite sem rede ou Deno: `node --test supabase/tests/invite_session.test.mjs`. Ele executa o handler real com respostas Auth/RPC simuladas e confirma que nenhuma operação de convite acontece quando a sessão é inválida ou a verificação falha. Não substitui teste de integração do gateway/Auth real.

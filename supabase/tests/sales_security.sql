@@ -2,9 +2,15 @@ begin;
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 ('00000000-0000-0000-0000-000000000021','admin-sales@example.invalid',now(),'{}'),
 ('00000000-0000-0000-0000-000000000022','member-sales@example.invalid',now(),'{"is_admin":true}');
+-- Sessões fictícias reais no banco; um JWT sem sessão não autoriza acesso.
+insert into auth.sessions(id,user_id,created_at)
+select id,id,statement_timestamp() from auth.users
+where id in ('00000000-0000-0000-0000-000000000021','00000000-0000-0000-0000-000000000022');
+
 update public.profiles set is_admin=true where id='00000000-0000-0000-0000-000000000021';
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000021',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000021','role','authenticated','session_id','00000000-0000-0000-0000-000000000021')::text,true);
 do $$
 declare product public.products%rowtype; sid uuid; again uuid; before_count bigint;
 begin
@@ -31,6 +37,7 @@ begin
  if not exists(select 1 from public.sale_items where sale_id=sid and product_id is null and product_name=product.name and unit_price_cents=product.price_cents) then raise exception 'Histórico perdido'; end if;
 end $$;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000022',true);
+select set_config('request.jwt.claims',jsonb_build_object('sub','00000000-0000-0000-0000-000000000022','role','authenticated','session_id','00000000-0000-0000-0000-000000000022')::text,true);
 do $$ begin
  if exists(select 1 from public.sales) or exists(select 1 from public.sale_items) then raise exception 'Vazamento para membro'; end if;
  begin

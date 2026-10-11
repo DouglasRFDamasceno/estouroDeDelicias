@@ -26,14 +26,14 @@ export function Landing() {
                   {session ? 'Gestão de projetos ↗' : 'Entrar ↗'}
                 </Link>
               )}
-              <a
+              <button
+                type="button"
                 className="g-button compact"
-                href={whatsapp('Olá! Quero conhecer as pipocas gourmet.')}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={() => setCatalogOpen(true)}
+                aria-haspopup="dialog"
               >
                 Fazer meu pedido <span aria-hidden="true">↗</span>
-              </a>
+              </button>
             </nav>
           </header>
           <main>

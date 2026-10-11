@@ -256,3 +256,36 @@ button.g-button{border:0;cursor:pointer;font-family:inherit}
 .management-logout p{position:absolute;right:0;top:100%;width:250px;z-index:20;background:#fff0f5;border:1px solid #f2cad9;padding:12px;border-radius:12px;color:#a82959;font-size:12px;white-space:normal;box-shadow:0 8px 24px #45236515}
 @media(max-width:700px){.management-logout-button{font-size:11px;padding-inline:8px}.management-top-actions{gap:0}}
 @media(max-width:400px){.management-shell .management-toolbar{padding-inline:4px}.management-top-actions a{font-size:10px;padding-inline:7px}.management-logout-button{font-size:10px;padding-inline:7px}.management-shell .management-toolbar ion-title{font-size:12px;padding-inline:4px}}
+
+.product-remove-button{border:1px solid #f2cad9;border-radius:100px;padding:8px 12px;min-height:36px;background:#fffafb;color:#b51b50;font:600 12px 'DM Sans',sans-serif;cursor:pointer}
+.product-remove-button:hover{background:#fff0f5}
+.product-remove-dialog{width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:28px;border:1px solid #f0e2eb;border-radius:22px;color:#452365;background:#fffaf4;box-shadow:0 24px 80px #45236535}
+.product-remove-dialog::backdrop{background:#29133780;backdrop-filter:blur(3px)}
+.product-remove-dialog h2{font-size:22px;margin-bottom:16px}
+.product-remove-dialog p{font-size:14px;color:#75647f;overflow-wrap:anywhere}
+.product-remove-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:12px;margin-top:24px}
+.product-remove-actions button{min-height:44px;padding:12px 18px;font:700 12px 'DM Sans',sans-serif;border-radius:100px;cursor:pointer}
+.product-cancel-button{background:white;color:#75647f;border:1px solid #ecdce7}
+.product-confirm-remove{background:#eb0956;color:white;border:1px solid #eb0956}
+.product-remove-dialog .product-remove-error{color:#b51b50;background:#fff0f5;padding:12px;border-radius:12px}
+.product-remove-actions button:disabled,.product-remove-button:disabled{opacity:.6;cursor:wait}
+.product-remove-dialog button:focus-visible{outline:3px solid #008bc8;outline-offset:3px}
+.management-shell .product-table td.product-price-cell{color:#bd1b50;font-weight:700;white-space:nowrap;text-align:right}
+
+.product-filters{margin:20px 0 24px}
+.product-filters fieldset{border:0;padding:0;margin:0;min-width:0}
+.product-filters legend{font-size:12px;font-weight:700;color:#75647f;margin-bottom:12px}
+.product-filters fieldset>div{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.product-filters label{display:flex;flex-direction:column;gap:6px;flex:1 1 150px;font-size:11px;font-weight:600;color:#75647f}
+.product-filters input,.table-pagination select{border:1px solid #efdce7;background:#fff;border-radius:12px;padding:10px 12px;color:#452365;font:13px 'DM Sans',sans-serif;min-height:42px;min-width:0;width:100%}
+.product-filters button,.table-pagination button{min-height:42px;padding:10px 15px;border:1px solid #f2cad9;border-radius:100px;background:#fff0f5;color:#b51b50;font:600 12px 'DM Sans',sans-serif;cursor:pointer}
+.product-filters button[type=submit]{background:#eb0956;border-color:#eb0956;color:white}
+.table-pagination{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-top:22px;font-size:12px;color:#75647f}
+.table-pagination p{margin:0}
+.table-pagination label{display:flex;align-items:center;gap:8px}
+.table-pagination select{width:auto;min-height:38px;padding:8px}
+.table-pagination>div{display:flex;align-items:center;gap:12px}
+.table-pagination button:disabled,.product-filters button:disabled{opacity:.45;cursor:default}
+.product-table thead button{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.product-table thead th[aria-sort=ascending],.product-table thead th[aria-sort=descending]{color:#eb0956}
+@media(max-width:700px){.table-pagination{gap:14px}.table-pagination>div{width:100%;justify-content:space-between}.product-filters label{flex-basis:100%}}

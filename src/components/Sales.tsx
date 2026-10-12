@@ -499,7 +499,7 @@ function SaleModal({
   return (
     <dialog
       ref={dialog}
-      className="sale-dialog"
+      className="sale-dialog form-dialog"
       aria-labelledby="sale-title"
       onCancel={(e) => {
         if (busy) e.preventDefault();
@@ -518,7 +518,13 @@ function SaleModal({
                   : 'Nova venda'}
             </h2>
           </div>
-          <button type="button" disabled={busy} onClick={onClose} aria-label="Fechar">
+          <button
+            type="button"
+            className="form-close"
+            disabled={busy}
+            onClick={onClose}
+            aria-label="Fechar"
+          >
             ✕
           </button>
         </div>

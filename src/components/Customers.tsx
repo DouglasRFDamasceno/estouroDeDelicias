@@ -358,7 +358,7 @@ function CustomerModal({
   return (
     <dialog
       ref={dialog}
-      className="sale-dialog customer-dialog"
+      className={`sale-dialog customer-dialog${discardRequested ? '' : ' form-dialog'}`}
       aria-labelledby={discardRequested ? 'discard-customer-title' : 'new-customer-title'}
       onCancel={(e) => {
         e.preventDefault();
@@ -386,7 +386,13 @@ function CustomerModal({
               <p className="eyebrow">GESTÃO DE CLIENTES</p>
               <h2 id="new-customer-title">{customer ? 'Editar cliente' : 'Novo cliente'}</h2>
             </div>
-            <button type="button" disabled={busy} onClick={requestClose} aria-label="Fechar">
+            <button
+              type="button"
+              className="form-close"
+              disabled={busy}
+              onClick={requestClose}
+              aria-label="Fechar"
+            >
               ✕
             </button>
           </div>

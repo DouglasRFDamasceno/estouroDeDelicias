@@ -514,7 +514,7 @@ function MaterialModal({
   return (
     <dialog
       ref={dialog}
-      className="sale-dialog customer-dialog"
+      className="sale-dialog customer-dialog form-dialog"
       aria-labelledby="material-title"
       onCancel={(e) => {
         if (saving.current) e.preventDefault();
@@ -951,7 +951,7 @@ function RecipeModal({
   return (
     <dialog
       ref={dialog}
-      className="sale-dialog recipe-dialog"
+      className="sale-dialog form-dialog recipe-dialog"
       aria-labelledby="recipe-title"
       onCancel={(e) => {
         if (saving.current) e.preventDefault();

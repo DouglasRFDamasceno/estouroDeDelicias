@@ -74,7 +74,7 @@ export function EditProduct({
   return (
     <dialog
       ref={dialog}
-      className="sale-dialog customer-dialog"
+      className="sale-dialog customer-dialog form-dialog"
       aria-labelledby="edit-product-title"
       onCancel={(e) => {
         if (saving.current) e.preventDefault();

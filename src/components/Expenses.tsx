@@ -384,7 +384,7 @@ function ExpenseModal({
   return (
     <dialog
       ref={dialog}
-      className="sale-dialog customer-dialog"
+      className="sale-dialog customer-dialog form-dialog"
       aria-labelledby="expense-title"
       onCancel={(event) => {
         if (saving.current) event.preventDefault();

@@ -8,6 +8,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { requireSupabase } from '../services/supabase';
 import { EditProduct } from './EditProduct';
+import { CreateProduct } from './CreateProduct';
 import { TableScrollArea } from './TableScrollArea';
 import { Pagination } from './Pagination';
 import { totalPages } from '../domain/pagination';
@@ -255,7 +256,7 @@ export function Products() {
           <h2>Catálogo de produtos</h2>
           <p>Produtos, apresentações e preços de venda.</p>
         </div>
-        {canManage && !open && (
+        {canManage && (
           <button
             className="g-button"
             type="button"
@@ -314,92 +315,6 @@ export function Products() {
         </>
       ) : (
         <>
-          {open && canManage && (
-            <form className="login-form product-form" onSubmit={submit}>
-              <div className="form-heading">
-                <h3>Novo produto</h3>
-                <button
-                  type="button"
-                  className="form-close"
-                  disabled={busy}
-                  onClick={() => {
-                    setOpen(false);
-                    setMessage('');
-                  }}
-                  aria-label="Fechar formulário de produto"
-                  title="Fechar"
-                >
-                  <span aria-hidden="true">✕</span>
-                </button>
-              </div>
-              <fieldset disabled={busy}>
-                <label htmlFor="product-name">Nome do produto</label>
-                <input
-                  id="product-name"
-                  name="name"
-                  required
-                  minLength={2}
-                  maxLength={120}
-                  placeholder="Ex.: Brownie de chocolate"
-                  autoFocus
-                />
-                <label htmlFor="product-category">Categoria</label>
-                <input
-                  id="product-category"
-                  name="category"
-                  required
-                  minLength={2}
-                  maxLength={80}
-                  placeholder="Ex.: Doces"
-                />
-                <label htmlFor="product-presentation">Apresentação / unidade de venda</label>
-                <input
-                  id="product-presentation"
-                  name="presentation"
-                  required
-                  maxLength={80}
-                  placeholder="Ex.: Unidade, caixa com 6 ou 100 g"
-                />
-                <label htmlFor="product-price">Preço de venda (R$)</label>
-                <input
-                  id="product-price"
-                  name="price"
-                  required
-                  inputMode="decimal"
-                  maxLength={10}
-                  placeholder="16,00"
-                  aria-describedby="product-price-help"
-                />
-                <p id="product-price-help">Use vírgula para centavos, sem separador de milhares.</p>
-                <label htmlFor="product-weight">Peso líquido (g)</label>
-                <input
-                  id="product-weight"
-                  name="weight"
-                  inputMode="decimal"
-                  placeholder="Ex.: 50, 100 ou 150"
-                  aria-describedby="product-weight-help"
-                />
-                <p id="product-weight-help">
-                  Peso da pipoca sem a embalagem, usado no cálculo automático da receita.
-                </p>
-                <div className="product-actions">
-                  <button className="g-button" type="submit">
-                    {busy ? 'Salvando…' : 'Salvar produto'}
-                  </button>
-                  <button
-                    type="button"
-                    className="text-link"
-                    onClick={() => {
-                      setOpen(false);
-                      setMessage('');
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </fieldset>
-            </form>
-          )}
           {catalog && catalog.owner === userId && (
             <>
               {catalog.rows.length ? (
@@ -497,6 +412,18 @@ export function Products() {
           )}
         </>
       )}
+      {open && canManage && (
+        <CreateProduct
+          busy={busy}
+          error={message}
+          onSubmit={submit}
+          onClose={() => {
+            if (saving.current) return;
+            setOpen(false);
+            setMessage('');
+          }}
+        />
+      )}
       {editing && canManage && (
         <EditProduct
           product={editing}
@@ -553,7 +480,7 @@ export function Products() {
         </div>
       </dialog>
       <p role="status" aria-live="polite">
-        {message}
+        {!open && message}
       </p>
     </section>
   );

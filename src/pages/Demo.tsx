@@ -91,12 +91,6 @@ export function Demo() {
                 </IonMenuToggle>
               ))}
             </IonList>
-            <div className="sidebar-note">
-              <span aria-hidden="true">✳</span>
-              <h3>Um passo de cada vez.</h3>
-              <p>Organize suas delícias, acompanhe cada conquista e faça novas ideias crescerem.</p>
-              <Link to="/">← Voltar ao site</Link>
-            </div>
           </IonContent>
         </IonMenu>
         <div id={contentId} className="ion-page">

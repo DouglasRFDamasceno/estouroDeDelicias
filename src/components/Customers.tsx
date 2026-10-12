@@ -1,3 +1,4 @@
+import { ActionIconButton } from './ActionIconButton';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthProvider';
@@ -202,12 +203,16 @@ export function Customers() {
                     <td>{date(c.created_at)}</td>
                     <td title={c.id}>{c.id.slice(0, 8)}</td>
                     <td>
-                      <button type="button" onClick={() => setEditing(c)}>
-                        Editar
-                      </button>{' '}
-                      <button type="button" onClick={() => setRemoving(c)}>
-                        Remover
-                      </button>
+                      <ActionIconButton
+                        action="edit"
+                        label={`Editar ${c.name}`}
+                        onClick={() => setEditing(c)}
+                      />{' '}
+                      <ActionIconButton
+                        action="remove"
+                        label={`Remover ${c.name}`}
+                        onClick={() => setRemoving(c)}
+                      />
                     </td>
                   </tr>
                 ))}

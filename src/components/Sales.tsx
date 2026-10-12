@@ -1,3 +1,4 @@
+import { ActionIconButton } from './ActionIconButton';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
@@ -274,12 +275,16 @@ export function Sales() {
                         <td>{money(s.total_cents - s.received_cents)}</td>
                         <td>{methods[s.payment_method]}</td>
                         <td>
-                          <button type="button" onClick={() => setEditing(s)}>
-                            Editar
-                          </button>{' '}
-                          <button type="button" onClick={() => setRemoving(s)}>
-                            Remover
-                          </button>
+                          <ActionIconButton
+                            action="edit"
+                            label={`Editar ${s.customer}, ${dateBR(s.sale_date)}`}
+                            onClick={() => setEditing(s)}
+                          />{' '}
+                          <ActionIconButton
+                            action="remove"
+                            label={`Remover ${s.customer}, ${dateBR(s.sale_date)}`}
+                            onClick={() => setRemoving(s)}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -575,13 +580,11 @@ function SaleModal({
                   />
                 </label>
                 <strong>{money(p.price_cents * p.quantity)}</strong>
-                <button
-                  type="button"
+                <ActionIconButton
+                  action="remove"
+                  label={`Remover ${p.name} da venda`}
                   onClick={() => setItems((v) => v.filter((i) => i.id !== p.id))}
-                  aria-label={`Remover ${p.name}`}
-                >
-                  Remover
-                </button>
+                />
               </li>
             ))}
           </ul>

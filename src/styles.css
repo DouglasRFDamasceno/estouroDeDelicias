@@ -3799,6 +3799,35 @@ button.g-button {
   display: block;
   margin-top: 5px;
 }
+.recipe-copy {
+  border: 1px solid #eadce9;
+  border-radius: 12px;
+  padding: 0 16px;
+  margin: 16px 0;
+  background: #fffaf4;
+}
+.recipe-copy[open] {
+  padding-bottom: 16px;
+}
+.recipe-copy summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 12px 0;
+}
+.recipe-copy summary:focus-visible {
+  outline: 2px solid #eb0956;
+  outline-offset: 4px;
+}
+.recipe-copy-confirm {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eadce9;
+}
+.recipe-copy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .recipe-lines {
   list-style: none;
   padding: 0;

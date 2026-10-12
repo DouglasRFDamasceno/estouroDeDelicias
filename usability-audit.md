@@ -206,3 +206,79 @@ Implementação solicitada após a auditoria. As seções anteriores preservam o
 - Nenhum cadastro, edição persistida, exclusão, convite ou pedido foi enviado durante a revalidação. Testes de rascunho usaram apenas texto fictício em memória. A validação de persistência continua exigindo ambiente com dados descartáveis.
 - Responsividade verificada em viewports simuladas, sem certificação de acessibilidade ou testes em aparelhos físicos. Proteção de rascunhos foi aplicada ao modal de clientes avaliado em U07; não se declara que todos os demais formulários já oferecem essa proteção.
 - Nada foi publicado automaticamente. Os achados foram corrigidos e verificados localmente; a versão publicada precisa receber as mudanças por um fluxo de deploy autorizado.
+
+---
+
+## Copiar receitas — auditoria e implementação de 12/10/2026
+
+### Escopo e ambiente
+
+Avaliação focada no pedido de copiar uma receita para o formulário de um novo cadastro, usando a skill `auditar-usabilidade`. As auditorias anteriores permanecem acima; seus resultados não foram reclassificados nesta rodada.
+
+- Aplicação local: `http://127.0.0.1:4180/demo/custos`, com Vite e Chromium headless via Playwright.
+- Perfil administrativo e sessão **simulados**, com respostas fictícias da API interceptadas no navegador. Não foi usado um login real, nem avaliada a autenticação do Supabase nesta rodada. As chamadas para destinos externos foram interceptadas ou bloqueadas.
+- Baseline: 1280 × 900. Revalidação: desktop 1440 × 1000, tablet 768 × 1000 e celular 390 × 844. São viewports simuladas, não aparelhos físicos.
+- Dados: pipocas fictícias, insumos, produto e receita base; lista de 11 receitas para verificar a navegação entre páginas. Nenhum cadastro real foi criado ou alterado.
+
+### Inventário de rotas
+
+| Rota | Finalidade e perfil | Visita nesta rodada |
+| --- | --- | --- |
+| `/demo/custos` | Cadastro de insumos e receitas; administrador | Acesso direto, aba Receitas e custos, Nova receita, cópia, edição e cancelamento percorridos com API simulada. |
+| `/demo/dashboard`, `/demo/produtos`, `/demo/clientes`, `/demo/vendas` | Outras áreas de gestão | Não avaliadas; fora do escopo da cópia. |
+| `/`, `/entrar`, `/criar-conta` | Páginas públicas e entrada | Não avaliadas nesta rodada. O login não foi testado. |
+| `/conta`, `/auth/callback`, `/auth/invite`, `/auth/recovery` | Perfil e autenticação | Não avaliadas; sem necessidade de usar credenciais reais para este teste local. |
+| Rotas inexistentes | Recuperação de navegação | Não reavaliadas. |
+
+### Achado priorizado
+
+| ID | Prioridade | Rota/fluxo | Problema observado | Melhoria | Esforço |
+| --- | --- | --- | --- | --- | --- |
+| RC01 | P2 | Custos → Nova receita | O formulário começa vazio. A ação Adicionar receita base acrescenta uma referência à preparação, sem preencher seus ingredientes no formulário. Para criar variações semelhantes, é necessário redigitar a composição. | Opção de copiar uma receita existente para um novo formulário, com revisão, confirmação de substituição e recuperação de falhas. Implementada e verificada localmente. | Médio |
+
+**Reprodução do baseline:** abrir Custos, selecionar Receitas e custos e abrir Nova receita. Não existe uma opção para copiar os campos de outra receita; o nome e a composição estão vazios. [Evidência antes da alteração](docs/usability-audit-2026-10-12/recipe-copy/antes-1280.png).
+
+O esforço de repetir os campos é verificável pela inspeção e navegação. Não foram medidos tempo de preenchimento, taxa de erro ou preferência de usuários reais. O pedido autoriza a implementação desta melhoria; não foi feito um redesenho geral da gestão.
+
+### Comportamento implementado
+
+- **Começar copiando outra receita** aparece no início de Nova receita, em uma seção expansível. O formulário manual continua disponível quando a opção não é usada ou não há receitas encontradas.
+- A busca reutiliza o seletor existente, com filtros, contagem e páginas no backend, desempate por ID e RLS. Selecionar uma receita apenas escolhe a origem; o preenchimento exige **Copiar para o formulário**.
+- Copia insumos, receitas base, quantidades, unidades, rendimentos e observações. Sugere um nome com **Cópia de…**, limitado ao tamanho permitido, e foca/seleciona esse campo para revisão. O produto fica em branco para escolher o da nova receita; o rendimento de venda copiado reaparece quando um produto é selecionado.
+- Mostra carregamento e bloqueia ações conflitantes. O preenchimento é aplicado apenas após carregar os metadados e todos os componentes; falhas preservam os campos atuais e permitem repetir ou escolher outra origem.
+- Se houver rascunho, apresenta **Manter preenchimento** e **Substituir preenchimento**, com foco inicial na primeira opção. Escape cancela somente essa confirmação. Recolher a seção também libera o formulário sem substituir dados.
+- Copiar não grava nada. **Salvar nova receita** usa UUID novo e revisão inicial zero. A composição original permanece igual; os cadastros compartilhados de insumos e receitas base continuam sendo referências atuais de custos.
+- O fluxo de edição continua disponível e não oferece a cópia para sobrescrever uma receita existente. Cancelar uma cópia em andamento aborta a leitura e impede que o resultado preencha outro formulário aberto depois.
+
+### Tarefas executadas e resultados
+
+| Tarefa | Resultado verificado |
+| --- | --- |
+| Abrir a opção por teclado, buscar e selecionar uma receita | Funcionou nas três dimensões; seleção por setas/Enter e navegação à segunda página. |
+| Selecionar a origem sem acionar a cópia | Nome e composição permaneceram vazios; nenhum salvamento enviado. |
+| Copiar receita com insumo e outra receita como componente | Quantidades, unidades, rendimentos e observações preenchidos; produto em branco; foco e seleção do novo nome confirmados. |
+| Alterar quantidade copiada e escolher novo produto | Custo recalculado na prévia e rendimento de venda copiado preservado. |
+| Salvar a nova receita | Requisição simulada com UUID diferente da origem, revisão zero e os componentes revisados. Original preservada. |
+| Falha de salvamento e nova tentativa | Mensagem de erro exibida; preenchimento preservado e envio posterior concluído na API simulada. |
+| Clique duplo ao copiar | Uma única leitura dos metadados da origem. |
+| Recusar a substituição do rascunho | Campos preservados e foco devolvido ao botão de cópia. Escape também preservou o formulário aberto. |
+| Falha na leitura dos componentes | Nome, rendimento, observações e quantidade do rascunho permaneceram iguais; repetição posterior preencheu corretamente. |
+| Cancelar durante a leitura e abrir Nova receita novamente | O formulário seguinte permaneceu vazio, sem receber o resultado da operação anterior. |
+| Busca sem resultados | Mensagem vazia e botão de cópia indisponível; cadastro manual permaneceu utilizável. |
+| Nome longo no celular | Nome sugerido respeitou o limite de 120 caracteres, sem transbordamento horizontal do modal. |
+| Abrir a edição de uma receita | Composição carregada normalmente e opção de cópia ausente, preservando a finalidade do fluxo. |
+
+### Evidências e verificações técnicas
+
+- Opção de cópia: [desktop](docs/usability-audit-2026-10-12/recipe-copy/opcao-1440.png), [tablet](docs/usability-audit-2026-10-12/recipe-copy/opcao-768.png), [celular](docs/usability-audit-2026-10-12/recipe-copy/opcao-390.png).
+- Formulário revisado após a cópia: [desktop](docs/usability-audit-2026-10-12/recipe-copy/preenchido-1440.png), [tablet](docs/usability-audit-2026-10-12/recipe-copy/preenchido-768.png), [celular](docs/usability-audit-2026-10-12/recipe-copy/preenchido-390.png).
+- [Confirmação antes de substituir o rascunho](docs/usability-audit-2026-10-12/recipe-copy/confirmacao-1440.png).
+- Fluxos acima executados por Playwright com respostas simuladas. Foram medidos largura do modal, conteúdo e página, sem rolagem horizontal involuntária nas três dimensões.
+- `npm run check`: lint, formatação, 41 testes, TypeScript e build aprovados. A suíte inclui testes que abrem uma porta local e foi executada fora do sandbox restrito. O build mantém o aviso existente sobre tamanho do bundle.
+- A cópia utiliza o banco e a RPC existentes; nenhuma migração adicional é necessária.
+
+### Melhorias rápidas, trabalho maior e limitações
+
+A melhoria solicitada foi concluída no formulário existente. As proteções de rascunho desta rodada se referem à **substituição por cópia**; não se declara uma revisão geral do descarte de rascunhos nos demais modais. Adicionar versões históricas das receitas ou clonar também os cadastros dos insumos seria outro escopo, sem necessidade para este pedido.
+
+Não foram avaliados login real, callbacks, recuperação de senha, autorização/RLS em uma nova sessão real, persistência no Supabase remoto, leitor de tela, contraste sistemático, zoom a 200%, teclado virtual, orientação paisagem ou outros navegadores. Os cenários de salvamento validam a interface e as requisições capturadas pela API simulada. A avaliação não substitui testes com usuários reais nem certifica conformidade completa de acessibilidade. A aplicação não foi publicada nesta tarefa.

@@ -23,19 +23,30 @@ export function ingredientCost(
   used: number,
   usedUnit: string,
 ) {
-  if (measureFamily(boughtUnit) !== measureFamily(usedUnit))
+  if (!Number.isSafeInteger(priceCents)) throw Error('Valores inválidos.');
+  return recipeComponentCost(priceCents, bought, boughtUnit, used, usedUnit);
+}
+// Receitas base usam o custo sem arredondamento, inclusive em vários níveis.
+export function recipeComponentCost(
+  totalCents: number,
+  produced: number,
+  producedUnit: string,
+  used: number,
+  usedUnit: string,
+) {
+  if (measureFamily(producedUnit) !== measureFamily(usedUnit))
     throw Error('Use unidades compatíveis: g/kg, ml/l ou unidades.');
   if (
-    !Number.isFinite(bought) ||
-    bought <= 0 ||
+    !Number.isFinite(produced) ||
+    produced <= 0 ||
     !Number.isFinite(used) ||
     used <= 0 ||
-    !Number.isSafeInteger(priceCents) ||
-    priceCents < 0
+    !Number.isFinite(totalCents) ||
+    totalCents < 0
   )
     throw Error('Valores inválidos.');
   const factor = (unit: string) => (unit === 'kg' || unit === 'l' ? 1000 : 1);
-  return (priceCents * used * factor(usedUnit)) / (bought * factor(boughtUnit));
+  return (totalCents * used * factor(usedUnit)) / (produced * factor(producedUnit));
 }
 export function parseCostPrice(value: string) {
   if (!/^\d{1,7}([,.]\d{1,2})?$/.test(value.trim()))

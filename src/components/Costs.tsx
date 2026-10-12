@@ -1,5 +1,5 @@
 import { ActionIconButton } from './ActionIconButton';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import { money } from '../domain/format';
@@ -9,12 +9,26 @@ import {
   measureUnits,
   parseCostPrice,
   parseQuantity,
+  recipeComponentCost,
 } from '../domain/costs';
 import type { MeasureUnit } from '../domain/costs';
 import { totalPages } from '../domain/pagination';
 import { requireSupabase } from '../services/supabase';
-import { loadCostRows, loadRecipeLines, searchMaterials } from '../services/costs';
-import type { CostSection, Material, MaterialOption, Recipe, RecipeLine } from '../services/costs';
+import {
+  loadCostRows,
+  loadRecipeForCopy,
+  loadRecipeLines,
+  searchMaterials,
+  searchRecipes,
+} from '../services/costs';
+import type {
+  CostSection,
+  Material,
+  MaterialOption,
+  Recipe,
+  RecipeLine,
+  RecipeOption,
+} from '../services/costs';
 import { searchSaleProducts } from '../services/saleOptions';
 import { removeRecord } from '../services/management';
 import { SearchSelect } from './SearchSelect';
@@ -262,11 +276,12 @@ function CostList({ section }: { section: CostSection }) {
                     ) : (
                       <>
                         <td>{money(row.total_cents)}</td>
-                        <td>{money(row.unit_cost_cents)}</td>
+                        <td>{row.product_id ? money(row.unit_cost_cents) : '—'}</td>
                         <td>
                           {row.product_label}
                           <small className="cost-detail">
-                            {row.yield_quantity} unidades de venda
+                            Rende {row.output_quantity} {row.output_unit}
+                            {row.product_id && ` · ${row.yield_quantity} unidades de venda`}
                           </small>
                         </td>
                       </>
@@ -324,7 +339,7 @@ function CostList({ section }: { section: CostSection }) {
         ))}
       {removing && (
         <ConfirmRemove
-          description={`Remover ${removing.name}? ${materials ? 'Insumos usados em receitas precisam ser retirados das receitas antes da exclusão.' : 'Os itens desta receita também serão removidos.'}`}
+          description={`Remover ${removing.name}? ${materials ? 'Insumos usados em receitas precisam ser retirados das receitas antes da exclusão.' : 'Receitas usadas como base precisam ser retiradas das outras receitas antes da exclusão. Os itens desta receita também serão removidos.'}`}
           remove={() => removeRecord(section, removing.id, removing.revision)}
           onClose={() => setRemoving(null)}
           onRemoved={() => {
@@ -495,6 +510,12 @@ function RecipeModal({
   onSaved: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
+    nameInput = useRef<HTMLInputElement>(null),
+    copyPanel = useRef<HTMLDetailsElement>(null),
+    copyButton = useRef<HTMLButtonElement>(null),
+    keepDraftButton = useRef<HTMLButtonElement>(null),
+    restoreCopyFocus = useRef(false),
+    copyController = useRef<AbortController | null>(null),
     saving = useRef(false),
     active = useRef(true),
     id = useRef(recipe?.id ?? crypto.randomUUID()),
@@ -505,6 +526,10 @@ function RecipeModal({
       recipe?.product_id ? { id: recipe.product_id, label: recipe.product_label } : null,
     ),
     [yieldQuantity, setYield] = useState(String(recipe?.yield_quantity ?? 1)),
+    [outputQuantity, setOutputQuantity] = useState(
+      String(recipe?.output_quantity ?? 1).replace('.', ','),
+    ),
+    [outputUnit, setOutputUnit] = useState<MeasureUnit>(recipe?.output_unit ?? 'kg'),
     [notes, setNotes] = useState(recipe?.notes ?? '');
   const [lines, setLines] = useState<RecipeLine[]>([]),
     [loading, setLoading] = useState(Boolean(recipe)),
@@ -513,13 +538,86 @@ function RecipeModal({
     [busy, setBusy] = useState(false),
     [uncertain, setUncertain] = useState(false),
     [error, setError] = useState('');
+  const [copySource, setCopySource] = useState<Recipe | null>(null),
+    [pendingCopy, setPendingCopy] = useState<Recipe | null>(null),
+    [copying, setCopying] = useState(false),
+    [copyError, setCopyError] = useState(''),
+    [copyStatus, setCopyStatus] = useState('');
+  const loadBases = useCallback(
+    (search: string, page: number, signal: AbortSignal) =>
+      searchRecipes(search, page, signal, id.current),
+    [],
+  );
   useEffect(() => {
     active.current = true;
     dialog.current?.showModal();
     return () => {
       active.current = false;
+      copyController.current?.abort();
     };
   }, []);
+  useEffect(() => {
+    if (pendingCopy) keepDraftButton.current?.focus();
+    else if (restoreCopyFocus.current) {
+      restoreCopyFocus.current = false;
+      copyButton.current?.focus();
+    }
+  }, [pendingCopy]);
+  useEffect(() => {
+    if (!copying && copyStatus) {
+      nameInput.current?.focus();
+      nameInput.current?.select();
+    }
+  }, [copying, copyStatus]);
+  async function copyRecipe(source: Recipe) {
+    if (saving.current || copyController.current || uncertain) return;
+    const controller = new AbortController();
+    copyController.current = controller;
+    const timer = setTimeout(() => controller.abort(), 15000);
+    setPendingCopy(null);
+    setCopying(true);
+    setCopyError('');
+    setCopyStatus('');
+    try {
+      const copied = await loadRecipeForCopy(source.id, controller.signal);
+      if (!active.current) return;
+      if (controller.signal.aborted) throw Error('Cópia interrompida');
+      setName(`Cópia de ${copied.recipe.name}`.slice(0, 120));
+      setProduct(null);
+      setYield(String(copied.recipe.yield_quantity));
+      setOutputQuantity(String(copied.recipe.output_quantity).replace('.', ','));
+      setOutputUnit(copied.recipe.output_unit);
+      setNotes(copied.recipe.notes);
+      setLines(copied.lines);
+      setError('');
+      setCopyStatus(
+        `Receita “${copied.recipe.name}” copiada para o formulário. Revise o nome e escolha o produto, se houver. A original permanece igual.`,
+      );
+      if (copyPanel.current) copyPanel.current.open = false;
+    } catch {
+      if (active.current)
+        setCopyError(
+          'Não foi possível copiar a receita. Seu preenchimento foi mantido. Tente novamente ou escolha outra receita.',
+        );
+    } finally {
+      clearTimeout(timer);
+      copyController.current = null;
+      if (active.current) setCopying(false);
+    }
+  }
+  function requestCopy() {
+    if (!copySource || copying || saving.current || uncertain) return;
+    const hasDraft =
+      name !== '' ||
+      product !== null ||
+      lines.length > 0 ||
+      notes !== '' ||
+      yieldQuantity !== '1' ||
+      outputQuantity !== '1' ||
+      outputUnit !== 'kg';
+    if (hasDraft) setPendingCopy(copySource);
+    else void copyRecipe(copySource);
+  }
   useEffect(() => {
     if (!recipe) return;
     let current = true;
@@ -546,6 +644,14 @@ function RecipeModal({
   }, [recipe, retry]);
   function cost(line: RecipeLine) {
     try {
+      if (line.kind === 'recipe')
+        return recipeComponentCost(
+          Number(line.recipe.raw_total_cents),
+          Number(line.recipe.output_quantity),
+          line.recipe.output_unit,
+          parseQuantity(line.quantity),
+          line.unit,
+        );
       return ingredientCost(
         line.material.price_cents,
         Number(line.material.purchase_quantity),
@@ -562,18 +668,17 @@ function RecipeModal({
   const valid = lines.length > 0 && costs.every((c) => c !== null);
   async function save(e: FormEvent) {
     e.preventDefault();
-    if (saving.current) return;
+    if (saving.current || copyController.current || pendingCopy) return;
     setError('');
     if (!payload.current) {
       try {
-        if (!valid) throw Error('Adicione insumos e confira as quantidades.');
-        if (!product && (!recipe || recipe.product_id))
-          throw Error('Selecione o produto da receita.');
+        if (!valid) throw Error('Adicione insumos ou receitas base e confira as quantidades.');
         if (name.trim().length < 2) throw Error('Informe o nome da receita.');
         if (
-          !/^\d{1,7}$/.test(yieldQuantity) ||
-          Number(yieldQuantity) < 1 ||
-          Number(yieldQuantity) > 1000000
+          product &&
+          (!/^\d{1,7}$/.test(yieldQuantity) ||
+            Number(yieldQuantity) < 1 ||
+            Number(yieldQuantity) > 1000000)
         )
           throw Error('Informe o rendimento de 1 a 1.000.000 unidades.');
         payload.current = {
@@ -582,10 +687,14 @@ function RecipeModal({
           p_request_id: request.current,
           p_name: name.trim(),
           p_product_id: product?.id ?? null,
-          p_yield_quantity: Number(yieldQuantity),
+          p_yield_quantity: product ? Number(yieldQuantity) : (recipe?.yield_quantity ?? 1),
+          p_output_quantity: parseQuantity(outputQuantity),
+          p_output_unit: outputUnit,
           p_notes: notes.trim(),
           p_items: lines.map((l) => ({
-            material_id: l.material.id,
+            ...(l.kind === 'material'
+              ? { material_id: l.material.id }
+              : { component_recipe_id: l.recipe.id }),
             quantity: parseQuantity(l.quantity),
             unit: l.unit,
           })),
@@ -644,11 +753,95 @@ function RecipeModal({
       aria-labelledby="recipe-title"
       onCancel={(e) => {
         if (saving.current) e.preventDefault();
-        else onClose();
+        else if (pendingCopy) {
+          e.preventDefault();
+          restoreCopyFocus.current = true;
+          setPendingCopy(null);
+        } else onClose();
       }}
     >
       <form onSubmit={save}>
         <h2 id="recipe-title">{recipe ? 'Editar receita' : 'Nova receita'}</h2>
+        {!recipe && (
+          <>
+            <details
+              ref={copyPanel}
+              className="recipe-copy"
+              onToggle={(e) => {
+                if (!e.currentTarget.open) setPendingCopy(null);
+              }}
+            >
+              <summary
+                aria-disabled={copying || undefined}
+                onClick={(e) => {
+                  if (copying) e.preventDefault();
+                }}
+              >
+                Começar copiando outra receita
+              </summary>
+              <p className="fine">
+                Copia insumos, receitas base, quantidades, rendimentos e observações. Escolha o nome
+                e o produto da nova receita antes de salvar.
+              </p>
+              <SearchSelect
+                label="Receita para copiar"
+                value={copySource ? { id: copySource.id, label: copySource.name } : null}
+                load={loadBases}
+                placeholder="Buscar receita pelo nome"
+                disabled={busy || uncertain || copying || Boolean(pendingCopy)}
+                onSelect={(option) => {
+                  setCopySource(option ? (option as RecipeOption).recipe : null);
+                  setCopyError('');
+                }}
+              />
+              {pendingCopy ? (
+                <div
+                  role="group"
+                  aria-labelledby="copy-replace-title"
+                  className="recipe-copy-confirm"
+                >
+                  <p id="copy-replace-title">
+                    Substituir o preenchimento atual pela receita “{pendingCopy.name}”? Os dados que
+                    você digitou serão substituídos somente se a cópia for carregada.
+                  </p>
+                  <div className="recipe-copy-actions">
+                    <button
+                      ref={keepDraftButton}
+                      type="button"
+                      onClick={() => {
+                        restoreCopyFocus.current = true;
+                        setPendingCopy(null);
+                      }}
+                    >
+                      Manter preenchimento
+                    </button>
+                    <button type="button" onClick={() => void copyRecipe(pendingCopy)}>
+                      Substituir preenchimento
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  ref={copyButton}
+                  type="button"
+                  disabled={!copySource || busy || uncertain || copying}
+                  onClick={requestCopy}
+                >
+                  {copying ? 'Copiando receita…' : 'Copiar para o formulário'}
+                </button>
+              )}
+              {copying && (
+                <p role="status">Carregando a receita. Aguarde para revisar os campos.</p>
+              )}
+              {copyError && <p role="alert">{copyError}</p>}
+            </details>
+            {copyStatus && (
+              <p role="status" className="fine">
+                {copyStatus}
+              </p>
+            )}
+          </>
+        )}
         {loading ? (
           <p role="status">Carregando receita…</p>
         ) : loadError ? (
@@ -659,10 +852,11 @@ function RecipeModal({
             </button>
           </p>
         ) : (
-          <fieldset disabled={busy || uncertain}>
+          <fieldset disabled={busy || uncertain || copying || Boolean(pendingCopy)}>
             <label>
               Nome da receita
               <input
+                ref={nameInput}
                 required
                 minLength={2}
                 maxLength={120}
@@ -672,35 +866,74 @@ function RecipeModal({
                 placeholder="Pipoca de chocolate"
               />
             </label>
+            <div className="sale-fields">
+              <label>
+                Rendimento da preparação
+                <input
+                  required
+                  inputMode="decimal"
+                  value={outputQuantity}
+                  onChange={(e) => setOutputQuantity(e.target.value)}
+                  placeholder="1"
+                />
+              </label>
+              <label>
+                Unidade do rendimento
+                <select
+                  value={outputUnit}
+                  onChange={(e) => setOutputUnit(e.target.value as MeasureUnit)}
+                >
+                  {measureUnits.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className="fine">
+              Quantidade pronta que esta receita produz. Exemplo: a caramelizada rende 1 kg; usar
+              300 g dela na receita de morango inclui 30% do custo da caramelizada.
+            </p>
             <SearchSelect
-              label="Produto da receita"
+              label="Produto da receita (opcional)"
               value={product}
               load={searchSaleProducts}
               onSelect={setProduct}
               disabled={busy || uncertain}
               placeholder="Buscar produto"
             />
-            {recipe && !recipe.product_id && !product && (
-              <p>
-                Produto removido do catálogo: {recipe.product_label}. Você pode manter a receita ou
-                selecionar outro produto.
-              </p>
-            )}
-            <label>
-              Rendimento (unidades de venda)
-              <input
-                type="number"
-                required
-                min="1"
-                max="1000000"
-                value={yieldQuantity}
-                onChange={(e) => setYield(e.target.value)}
-              />
-            </label>
             <p className="fine">
-              Quantas unidades da apresentação selecionada esta receita produz? Exemplo: 10 pacotes
-              de 100 g → rendimento 10.
+              Para uma receita usada apenas como base, deixe o produto em branco.
             </p>
+            {recipe &&
+              !recipe.product_id &&
+              recipe.product_label !== 'Receita base' &&
+              !product && (
+                <p>
+                  Produto removido do catálogo: {recipe.product_label}. Você pode manter a receita
+                  ou selecionar outro produto.
+                </p>
+              )}
+            {product && (
+              <>
+                <label>
+                  Rendimento (unidades de venda)
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    max="1000000"
+                    value={yieldQuantity}
+                    onChange={(e) => setYield(e.target.value)}
+                  />
+                </label>
+                <p className="fine">
+                  Quantas unidades da apresentação selecionada esta receita produz? Exemplo: 10
+                  pacotes de 100 g → rendimento 10.
+                </p>
+              </>
+            )}
             <SearchSelect
               label="Adicionar insumo"
               value={null}
@@ -710,7 +943,7 @@ function RecipeModal({
               onSelect={(option) => {
                 if (!option) return;
                 const m = (option as MaterialOption).material;
-                if (lines.some((l) => l.material.id === m.id)) {
+                if (lines.some((l) => l.kind === 'material' && l.material.id === m.id)) {
                   setError('Insumo já adicionado. Ajuste sua quantidade abaixo.');
                   return;
                 }
@@ -718,6 +951,7 @@ function RecipeModal({
                 setLines((v) => [
                   ...v,
                   {
+                    kind: 'material',
                     material: m,
                     quantity: '',
                     unit:
@@ -730,79 +964,120 @@ function RecipeModal({
                 ]);
               }}
             />
+            <SearchSelect
+              label="Adicionar receita base"
+              value={null}
+              load={loadBases}
+              placeholder="Buscar receita já cadastrada"
+              disabled={busy || uncertain || lines.length >= 50}
+              onSelect={(option) => {
+                if (!option) return;
+                const base = (option as RecipeOption).recipe;
+                if (lines.some((l) => l.kind === 'recipe' && l.recipe.id === base.id)) {
+                  setError('Receita base já adicionada. Ajuste sua quantidade abaixo.');
+                  return;
+                }
+                setError('');
+                setLines((v) => [
+                  ...v,
+                  {
+                    kind: 'recipe',
+                    recipe: base,
+                    quantity: '',
+                    unit:
+                      base.output_unit === 'kg'
+                        ? 'g'
+                        : base.output_unit === 'l'
+                          ? 'ml'
+                          : base.output_unit,
+                  },
+                ]);
+              }}
+            />
             <ul className="recipe-lines">
-              {lines.map((l, index) => (
-                <li key={l.material.id}>
-                  <strong>
-                    {l.material.name}
-                    <small>
-                      {l.material.purchase_quantity} {l.material.purchase_unit} por{' '}
-                      {money(l.material.price_cents)}
-                    </small>
-                  </strong>
-                  <div className="sale-fields">
-                    <label>
-                      Quantidade usada de {l.material.name}
-                      <input
-                        required
-                        inputMode="decimal"
-                        value={l.quantity}
-                        placeholder="200"
-                        onChange={(e) =>
-                          setLines((v) =>
-                            v.map((r, i) => (i === index ? { ...r, quantity: e.target.value } : r)),
-                          )
-                        }
+              {lines.map((l, index) => {
+                const source = l.kind === 'material' ? l.material : l.recipe;
+                const sourceQuantity =
+                  l.kind === 'material' ? l.material.purchase_quantity : l.recipe.output_quantity;
+                const sourceUnit =
+                  l.kind === 'material' ? l.material.purchase_unit : l.recipe.output_unit;
+                const sourceCost =
+                  l.kind === 'material' ? l.material.price_cents : l.recipe.raw_total_cents;
+                return (
+                  <li key={`${l.kind}:${source.id}`}>
+                    <strong>
+                      {source.name}
+                      {l.kind === 'recipe' && ' · Receita base'}
+                      <small>
+                        {sourceQuantity} {sourceUnit} por {money(sourceCost)}
+                      </small>
+                    </strong>
+                    <div className="sale-fields">
+                      <label>
+                        Quantidade usada de {source.name}
+                        <input
+                          required
+                          inputMode="decimal"
+                          value={l.quantity}
+                          placeholder="200"
+                          onChange={(e) =>
+                            setLines((v) =>
+                              v.map((r, i) =>
+                                i === index ? { ...r, quantity: e.target.value } : r,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                      <label>
+                        Unidade de {source.name}
+                        <select
+                          value={l.unit}
+                          onChange={(e) =>
+                            setLines((v) =>
+                              v.map((r, i) =>
+                                i === index ? { ...r, unit: e.target.value as MeasureUnit } : r,
+                              ),
+                            )
+                          }
+                        >
+                          {measureUnits
+                            .filter((u) => measureFamily(u) === measureFamily(sourceUnit))
+                            .map((u) => (
+                              <option key={u} value={u}>
+                                {u}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="recipe-line-total">
+                      <span>
+                        {cost(l) === null
+                          ? 'Informe uma quantidade válida'
+                          : `Custo: ${money(cost(l)!)}`}
+                      </span>
+                      <ActionIconButton
+                        action="remove"
+                        label={`Remover ${source.name} da receita`}
+                        onClick={() => setLines((v) => v.filter((_, i) => i !== index))}
                       />
-                    </label>
-                    <label>
-                      Unidade de {l.material.name}
-                      <select
-                        value={l.unit}
-                        onChange={(e) =>
-                          setLines((v) =>
-                            v.map((r, i) =>
-                              i === index ? { ...r, unit: e.target.value as MeasureUnit } : r,
-                            ),
-                          )
-                        }
-                      >
-                        {measureUnits
-                          .filter(
-                            (u) => measureFamily(u) === measureFamily(l.material.purchase_unit),
-                          )
-                          .map((u) => (
-                            <option key={u} value={u}>
-                              {u}
-                            </option>
-                          ))}
-                      </select>
-                    </label>
-                  </div>
-                  <div className="recipe-line-total">
-                    <span>
-                      {cost(l) === null
-                        ? 'Informe uma quantidade válida'
-                        : `Custo: ${money(cost(l)!)}`}
-                    </span>
-                    <ActionIconButton
-                      action="remove"
-                      label={`Remover ${l.material.name} da receita`}
-                      onClick={() => setLines((v) => v.filter((_, i) => i !== index))}
-                    />
-                  </div>
-                </li>
-              ))}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
             <p className="sale-sum">
               Custo da receita <strong>{valid ? money(total) : '—'}</strong>
             </p>
-            <p className="sale-sum">
-              Custo por unidade{' '}
-              <strong>
-                {valid && Number(yieldQuantity) > 0 ? money(total / Number(yieldQuantity)) : '—'}
-              </strong>
-            </p>
+            {product && (
+              <p className="sale-sum">
+                Custo por unidade{' '}
+                <strong>
+                  {valid && Number(yieldQuantity) > 0 ? money(total / Number(yieldQuantity)) : '—'}
+                </strong>
+              </p>
+            )}
             <p className="fine">
               Prévia com os preços consultados. Ao salvar, o banco calcula com os preços atuais.
               Custos de mão de obra, energia e perdas não estão incluídos automaticamente.
@@ -818,8 +1093,19 @@ function RecipeModal({
           <button type="button" disabled={busy} onClick={onClose}>
             Cancelar
           </button>
-          <button className="sale-primary" disabled={busy || loading || loadError || !lines.length}>
-            {busy ? 'Salvando…' : uncertain ? 'Confirmar novamente' : 'Salvar receita'}
+          <button
+            className="sale-primary"
+            disabled={
+              busy || copying || Boolean(pendingCopy) || loading || loadError || !lines.length
+            }
+          >
+            {busy
+              ? 'Salvando…'
+              : uncertain
+                ? 'Confirmar novamente'
+                : copyStatus
+                  ? 'Salvar nova receita'
+                  : 'Salvar receita'}
           </button>
         </div>
       </form>

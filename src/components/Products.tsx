@@ -295,7 +295,22 @@ export function Products() {
         <>
           {open && canManage && (
             <form className="login-form product-form" onSubmit={submit}>
-              <h3>Novo produto</h3>
+              <div className="form-heading">
+                <h3>Novo produto</h3>
+                <button
+                  type="button"
+                  className="form-close"
+                  disabled={busy}
+                  onClick={() => {
+                    setOpen(false);
+                    setMessage('');
+                  }}
+                  aria-label="Fechar formulário de produto"
+                  title="Fechar"
+                >
+                  <span aria-hidden="true">✕</span>
+                </button>
+              </div>
               <fieldset disabled={busy}>
                 <label htmlFor="product-name">Nome do produto</label>
                 <input

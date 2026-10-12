@@ -434,7 +434,19 @@ function MaterialModal({
       }}
     >
       <form onSubmit={save}>
-        <h2 id="material-title">{material ? 'Editar insumo' : 'Novo insumo'}</h2>
+        <div className="form-heading">
+          <h2 id="material-title">{material ? 'Editar insumo' : 'Novo insumo'}</h2>
+          <button
+            type="button"
+            className="form-close"
+            disabled={busy}
+            onClick={onClose}
+            aria-label="Fechar formulário de insumo"
+            title="Fechar"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        </div>
         <fieldset disabled={busy}>
           <label>
             Nome do insumo
@@ -761,7 +773,19 @@ function RecipeModal({
       }}
     >
       <form onSubmit={save}>
-        <h2 id="recipe-title">{recipe ? 'Editar receita' : 'Nova receita'}</h2>
+        <div className="form-heading">
+          <h2 id="recipe-title">{recipe ? 'Editar receita' : 'Nova receita'}</h2>
+          <button
+            type="button"
+            className="form-close"
+            disabled={busy}
+            onClick={onClose}
+            aria-label="Fechar formulário de receita"
+            title="Fechar"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        </div>
         {!recipe && (
           <>
             <details

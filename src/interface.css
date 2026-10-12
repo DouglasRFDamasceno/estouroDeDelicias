@@ -12,6 +12,12 @@
   --ui-radius-lg: 20px;
   --ui-shadow: 0 6px 24px #45236508;
   --ui-focus: 0 0 0 3px #eb09561c;
+  --ui-edit-soft: #f1eafa;
+  --ui-edit-hover: #e5d8f4;
+  --ui-edit-border: #d5c1e8;
+  --ui-remove-soft: #fff1f6;
+  --ui-remove-hover: #ffe0ec;
+  --ui-remove-border: #efb7cd;
 }
 :where(.management-shell, .gourmet, .sale-dialog, .g-catalog-modal) {
   -webkit-tap-highlight-color: #eb09561a;
@@ -421,6 +427,9 @@
 button.action-icon-button,
 .management-shell .product-table td > button.action-icon-button,
 .sale-dialog button.action-icon-button {
+  --action-background: var(--ui-edit-soft);
+  --action-hover: var(--ui-edit-hover);
+  --action-border: var(--ui-edit-border);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -431,9 +440,9 @@ button.action-icon-button,
   padding: 0;
   flex-shrink: 0;
   vertical-align: middle;
-  border: 1px solid var(--ui-border);
+  border: 1px solid var(--action-border);
   border-radius: var(--ui-radius);
-  background: var(--ui-canvas);
+  background: var(--action-background);
   color: var(--ui-ink);
   cursor: pointer;
 }
@@ -444,7 +453,17 @@ button.action-icon-button,
 button.action-icon-button--remove,
 .management-shell .product-table td > button.action-icon-button--remove,
 .sale-dialog button.action-icon-button--remove {
+  --action-background: var(--ui-remove-soft);
+  --action-hover: var(--ui-remove-hover);
+  --action-border: var(--ui-remove-border);
   color: var(--ui-brand-strong);
+}
+@media (hover: hover) {
+  button.action-icon-button:enabled:hover,
+  .management-shell .product-table td > button.action-icon-button:enabled:hover,
+  .sale-dialog button.action-icon-button:enabled:hover {
+    background: var(--action-hover);
+  }
 }
 button.action-icon-button:focus-visible {
   outline: 3px solid var(--ui-brand);

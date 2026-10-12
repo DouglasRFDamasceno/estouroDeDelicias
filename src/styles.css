@@ -3520,6 +3520,40 @@ button.g-button {
   background: #fffaf4;
   color: #452365;
 }
+.form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.form-heading h2,
+.form-heading h3 {
+  margin: 0;
+}
+button.form-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #eadce9;
+  border-radius: 10px;
+  background: #fffaf4;
+  color: #452365;
+  font: inherit;
+  cursor: pointer;
+}
+button.form-close:focus-visible {
+  outline: 3px solid #eb0956;
+  outline-offset: 3px;
+}
+button.form-close:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .sale-dialog::backdrop {
   background: rgb(45 20 57 / 55%);
 }

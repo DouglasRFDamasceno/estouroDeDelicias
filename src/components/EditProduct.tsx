@@ -75,7 +75,19 @@ export function EditProduct({
       }}
     >
       <form onSubmit={save}>
-        <h2 id="edit-product-title">Editar produto</h2>
+        <div className="form-heading">
+          <h2 id="edit-product-title">Editar produto</h2>
+          <button
+            type="button"
+            className="form-close"
+            disabled={busy}
+            onClick={onClose}
+            aria-label="Fechar formulário de produto"
+            title="Fechar"
+          >
+            <span aria-hidden="true">✕</span>
+          </button>
+        </div>
         <fieldset disabled={busy}>
           <label>
             Nome do produto

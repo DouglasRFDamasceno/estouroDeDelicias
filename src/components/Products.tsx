@@ -1,3 +1,4 @@
+import { ActionIconButton } from './ActionIconButton';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { readProductQuery } from '../domain/productQuery';
@@ -395,25 +396,22 @@ export function Products() {
                           <td className="product-price-cell">{money(product.price_cents)}</td>
                           {canManage && (
                             <td>
-                              <button
-                                type="button"
+                              <ActionIconButton
+                                action="edit"
+                                label={`Editar ${product.name}, ${product.presentation}`}
                                 disabled={busy}
                                 onClick={() => setEditing(product)}
-                              >
-                                Editar
-                              </button>{' '}
-                              <button
-                                type="button"
+                              />{' '}
+                              <ActionIconButton
+                                action="remove"
                                 className="product-remove-button"
                                 disabled={busy}
-                                aria-label={`Remover ${product.name}, ${product.presentation}`}
+                                label={`Remover ${product.name}, ${product.presentation}`}
                                 onClick={() => {
                                   setRemoving(product);
                                   setRemoveError('');
                                 }}
-                              >
-                                Remover
-                              </button>
+                              />
                             </td>
                           )}
                         </tr>

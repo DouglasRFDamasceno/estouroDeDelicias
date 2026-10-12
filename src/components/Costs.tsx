@@ -1,3 +1,4 @@
+import { ActionIconButton } from './ActionIconButton';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthProvider';
@@ -265,12 +266,16 @@ function CostList({ section }: { section: CostSection }) {
                       </>
                     )}
                     <td>
-                      <button type="button" onClick={() => setEditing(row)}>
-                        Editar
-                      </button>{' '}
-                      <button type="button" onClick={() => setRemoving(row)}>
-                        Remover
-                      </button>
+                      <ActionIconButton
+                        action="edit"
+                        label={`Editar ${row.name}`}
+                        onClick={() => setEditing(row)}
+                      />{' '}
+                      <ActionIconButton
+                        action="remove"
+                        label={`Remover ${row.name}`}
+                        onClick={() => setRemoving(row)}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -774,12 +779,11 @@ function RecipeModal({
                         ? 'Informe uma quantidade válida'
                         : `Custo: ${money(cost(l)!)}`}
                     </span>
-                    <button
-                      type="button"
+                    <ActionIconButton
+                      action="remove"
+                      label={`Remover ${l.material.name} da receita`}
                       onClick={() => setLines((v) => v.filter((_, i) => i !== index))}
-                    >
-                      Remover insumo
-                    </button>
+                    />
                   </div>
                 </li>
               ))}

@@ -399,3 +399,41 @@
   line-height: 1.5;
   margin: 12px 0;
 }
+
+/* Ações compactas com alvo de toque de 44 px. */
+button.action-icon-button,
+.management-shell .product-table td > button.action-icon-button,
+.sale-dialog button.action-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+  vertical-align: middle;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-canvas);
+  color: var(--ui-ink);
+  cursor: pointer;
+}
+.action-icon-button ion-icon {
+  font-size: 20px;
+  pointer-events: none;
+}
+button.action-icon-button--remove,
+.management-shell .product-table td > button.action-icon-button--remove,
+.sale-dialog button.action-icon-button--remove {
+  color: var(--ui-brand-strong);
+}
+button.action-icon-button:focus-visible {
+  outline: 3px solid var(--ui-brand);
+  outline-offset: 3px;
+}
+button.action-icon-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -133,6 +133,7 @@
   letter-spacing: normal;
   text-transform: none;
   text-align: left;
+  white-space: nowrap;
   vertical-align: middle;
   padding: 16px 12px;
 }
@@ -148,6 +149,7 @@
   font: inherit;
   color: inherit;
   text-align: inherit;
+  white-space: nowrap;
   gap: 8px;
 }
 .management-shell .product-table thead button > span[aria-hidden='true'] {
@@ -456,4 +458,32 @@ button.action-icon-button:disabled {
 .management-shell .product-table :is(th, td).table-actions {
   text-align: center;
   white-space: nowrap;
+}
+
+.management-shell .management-toolbar ion-menu-button.management-section-menu {
+  width: auto;
+  max-width: 100%;
+}
+.management-section-menu-label {
+  margin-inline-start: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+@media (max-width: 991px) {
+  .management-shell .management-toolbar .management-desktop-title {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .management-section-menu-label {
+    font-size: 14px;
+  }
+}
+@media (max-width: 400px) {
+  .management-section-menu-label {
+    font-size: 12px;
+  }
 }

@@ -102,11 +102,19 @@ export function Demo() {
           <IonHeader className="ion-no-border">
             <IonToolbar className="management-toolbar">
               <IonButtons slot="start">
-                <IonMenuButton aria-label="Abrir menu">
+                <IonMenuButton
+                  className="management-section-menu"
+                  aria-label={`Abrir menu — ${title ?? 'Página não encontrada'}`}
+                >
                   <span aria-hidden="true">☰</span>
+                  <span className="management-section-menu-label" aria-hidden="true">
+                    {title ?? 'Página não encontrada'}
+                  </span>
                 </IonMenuButton>
               </IonButtons>
-              <IonTitle>{title ?? 'Página não encontrada'}</IonTitle>
+              <IonTitle className="management-desktop-title">
+                {title ?? 'Página não encontrada'}
+              </IonTitle>
               <div slot="end" className="management-top-actions">
                 {session && <LogoutButton />}
                 {session && (

@@ -282,3 +282,68 @@ O esforço de repetir os campos é verificável pela inspeção e navegação. N
 A melhoria solicitada foi concluída no formulário existente. As proteções de rascunho desta rodada se referem à **substituição por cópia**; não se declara uma revisão geral do descarte de rascunhos nos demais modais. Adicionar versões históricas das receitas ou clonar também os cadastros dos insumos seria outro escopo, sem necessidade para este pedido.
 
 Não foram avaliados login real, callbacks, recuperação de senha, autorização/RLS em uma nova sessão real, persistência no Supabase remoto, leitor de tela, contraste sistemático, zoom a 200%, teclado virtual, orientação paisagem ou outros navegadores. Os cenários de salvamento validam a interface e as requisições capturadas pela API simulada. A avaliação não substitui testes com usuários reais nem certifica conformidade completa de acessibilidade. A aplicação não foi publicada nesta tarefa.
+
+## 2026-10-12 — Organização do formulário de receitas
+
+Auditoria e implementação focadas no pedido de melhorar o formulário de nova receita. Foi aplicada a skill `auditar-usabilidade`, preservando os relatórios anteriores. O mesmo formulário atende à edição, que também foi verificada. Campos, referências, cálculos e payload da RPC `save_recipe` foram preservados; nenhuma migração foi necessária.
+
+### Ambiente e cobertura
+
+- Vite local em `http://127.0.0.1:4190`, Chromium headless e Playwright.
+- Perfil administrativo, sessão e respostas do Supabase **simulados**, com ingredientes, produtos, receitas base e embalagens fictícios. Requisições externas interceptadas ou bloqueadas; nenhum registro real alterado.
+- Baseline em 390 × 844 e 1280 × 900. Revalidação em 360 × 800, 390 × 844, 768 × 1000, 1280 × 900 e 844 × 390. São simulações de viewport, não aparelhos físicos.
+
+| Rota | Finalidade / perfil | Cobertura nesta rodada |
+| --- | --- | --- |
+| `/demo/custos` | Gestão de receitas / administrador | Acesso direto, listagem, novo cadastro, edição, cópia, navegação entre abas, cancelamento e salvamento com API simulada. |
+| `/demo/dashboard`, `/demo/produtos`, `/demo/clientes`, `/demo/vendas` | Outras áreas de gestão | Fora do escopo; não reavaliadas. |
+| `/`, `/entrar`, `/criar-conta`, `/conta` e callbacks de autenticação | Páginas públicas e conta | Não reavaliadas; login real não executado. |
+| Rotas inexistentes e navegação voltar/avançar do navegador | Recuperação e histórico | Não reavaliados; a organização interna do modal não altera a rota. |
+
+### Achados priorizados
+
+| ID | Prioridade | Fluxo | Problema observado | Melhoria implementada | Esforço |
+| --- | --- | --- | --- | --- | --- |
+| RF01 | P2 | Nova receita e edição | Identificação, rendimento, cálculo, ingredientes e apresentações aparecem em uma única sequência longa, sem navegação entre as partes. | Três abas: Receita, Ingredientes e Apresentações, com instruções específicas e navegação direta ou pelos botões Próximo/Voltar. | Médio |
+| RF02 | P2 | Preenchimento e revisão de custos | O resumo de custo, os botões de salvar/cancelar e o fechamento exigem voltar a diferentes extremos da rolagem conforme cresce a composição. | Cabeçalho e rodapé permanecem visíveis; apenas o conteúdo da aba rola. Custo da preparação e quantidade de itens aparecem no rodapé. | Médio |
+| RF03 | P3 | Cadastro sem composição | Salvar fica indisponível quando não há itens, sem uma mensagem apresentada por essa ação para indicar o que falta. | Salvar explica a necessidade de composição e abre Ingredientes. Campos obrigatórios inválidos abrem sua aba e recebem foco; embalagens recolhidas são expandidas quando necessário. | Pequeno |
+
+**Reprodução do baseline:** acessar Custos → Receitas e custos → Nova receita. Percorrer o formulário, adicionar ingredientes e apresentações e localizar o custo total e as ações de salvar. O formulário vazio já possuía conteúdo maior que a área visível: 1.794 px de conteúdo para 818 px de altura interna no celular e 1.528 px para 808 px no desktop. Estes números descrevem a rolagem observada, sem estimar tempo de tarefa ou ganho percentual.
+
+Evidências anteriores: [desktop](docs/usability-audit-2026-10-12/recipe-form/antes-1280.png) e [celular](docs/usability-audit-2026-10-12/recipe-form/antes-390.png).
+
+### Comportamento e tarefas verificadas
+
+| Tarefa | Resultado |
+| --- | --- |
+| Preencher nome, rendimento e observações; avançar e voltar | Campos preservados. A categoria continua derivada do produto quando há vínculo. |
+| Alternar abas diretamente ou por Próximo/Voltar | Apenas uma aba visível; conteúdo volta ao início ao trocar. Próximo não envia a receita. |
+| Navegar pelas abas com teclado | Setas esquerda/direita com retorno entre extremos, Home/End, foco visível e associações tab/tabpanel verificadas. |
+| Adicionar ingredientes e receita base, editar quantidades e remover a base | Grupos, índices de edição e custo mantidos; resumo atualizado no rodapé. |
+| Adicionar apresentações de 50, 100 e 150 g com embalagem própria | Custos por pacote de R$ 1,50, R$ 2,50 e R$ 3,50 na fixture; embalagens separadas da preparação no payload. Produto sem peso continua mostrando orientação. |
+| Salvar com nome ou quantidade obrigatória vazios em outra aba | Envio bloqueado, aba correta aberta e campo focado. |
+| Salvar com rendimento zero, unidade incompatível ou composição vazia | Mensagem específica e abertura de Receita ou Ingredientes para correção. |
+| Salvar com quantidade de embalagem vazia e seção recolhida | Seção expandida, campo focado e nenhum envio realizado. |
+| Salvar receita por peso e editar receita existente | Payload conserva ingredientes, apresentações, embalagens, observações, ID e revisão esperados. |
+| Editar receita no modo por unidades | Produto, rendimento de 10 unidades e payload legado preservados. |
+| Copiar receita e salvar como base sem apresentações | Nome sugerido e foco preservados, composição copiada, ID novo e apresentações em branco. |
+| Receber erro de salvamento e resposta incerta | Preenchimento preservado após erro definitivo; resposta incerta bloqueia alterações e oferece Confirmar novamente, repetindo exatamente o mesmo payload. |
+| Percorrer todas as abas e rolar o conteúdo nas cinco dimensões | Cabeçalho e rodapé dentro da viewport; nenhum transbordamento horizontal de campos, botões, modal ou página. |
+
+As abas mantêm os campos montados. O formulário revela e valida o primeiro campo obrigatório inválido antes do salvamento, para que campos de outras abas possam ser corrigidos. As validações de negócio direcionam à seção correspondente. A paginação, buscas no backend e RLS existentes não foram alteradas.
+
+### Evidências após a alteração
+
+| Parte | Desktop | Tablet | Celular |
+| --- | --- | --- | --- |
+| Receita | [1280 px](docs/usability-audit-2026-10-12/recipe-form/receita-1280.png) | [768 px](docs/usability-audit-2026-10-12/recipe-form/receita-768.png) | [390 px](docs/usability-audit-2026-10-12/recipe-form/receita-390.png) |
+| Ingredientes | [1280 px](docs/usability-audit-2026-10-12/recipe-form/ingredientes-1280.png) | [768 px](docs/usability-audit-2026-10-12/recipe-form/ingredientes-768.png) | [390 px](docs/usability-audit-2026-10-12/recipe-form/ingredientes-390.png) |
+| Apresentações | [1280 px](docs/usability-audit-2026-10-12/recipe-form/apresentacoes-1280.png) | [768 px](docs/usability-audit-2026-10-12/recipe-form/apresentacoes-768.png) | [390 px](docs/usability-audit-2026-10-12/recipe-form/apresentacoes-390.png) |
+
+### Validação técnica, próximos trabalhos e limites
+
+`npm run check` aprovado: lint, Prettier, 44 testes, TypeScript e build. O build mantém o aviso existente de bundle acima de 500 kB. Os fluxos de interface foram executados por Playwright com API simulada, incluindo as medições de dimensões e a inspeção das requisições de salvamento.
+
+As três melhorias foram implementadas e verificadas localmente. Não foi identificado trabalho adicional indispensável para este pedido. Persistência de rascunho entre sessões e um estudo com pessoas que cadastram receitas podem ser avaliados em outro escopo.
+
+A avaliação identifica dificuldades por inspeção e execução de tarefas; não substitui testes com usuários reais. Não foram avaliados persistência no Supabase remoto, login real, políticas RLS em nova sessão, leitores de tela, zoom a 200%, contraste sistemático, teclado virtual ou outros navegadores. Não se declara conformidade completa de acessibilidade. Aplicação não publicada nesta tarefa.

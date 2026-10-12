@@ -3,6 +3,7 @@ import { ActionIconButton } from './ActionIconButton';
 import { ClearableInput } from './ClearableInput';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { flushSync } from 'react-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { money } from '../domain/format';
 import { measureUnits, parseCostPrice, parseQuantity } from '../domain/costs';
@@ -611,6 +612,8 @@ function MaterialModal({
     </dialog>
   );
 }
+const recipeFormTabs = ['Receita', 'Ingredientes', 'Apresentações'] as const;
+
 function RecipeModal({
   recipe,
   onClose,
@@ -620,6 +623,8 @@ function RecipeModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const [section, setSection] = useState(0);
+  const content = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     nameInput = useRef<HTMLInputElement>(null),
     copyPanel = useRef<HTMLDetailsElement>(null),
@@ -712,6 +717,7 @@ function RecipeModal({
       const copied = await loadRecipeForCopy(source.id, controller.signal);
       if (!active.current) return;
       if (controller.signal.aborted) throw Error('Cópia interrompida');
+      setSection(0);
       setName(`Cópia de ${copied.recipe.name}`.slice(0, 120));
       setLegacyProduct(null);
       setPresentations([]);
@@ -789,29 +795,69 @@ function RecipeModal({
   const costs = lines.map(cost);
   const total = costs.reduce<number>((sum, c) => sum + (c ?? 0), 0);
   const valid = lines.length > 0 && costs.every((c) => c !== null);
-  async function save(e: FormEvent) {
+  const locked = busy || uncertain || copying || Boolean(pendingCopy);
+  function changeSection(next: number, focusTab = false) {
+    setSection(next);
+    content.current?.scrollTo({ top: 0 });
+    if (focusTab) document.getElementById(`recipe-tab-${next}`)?.focus();
+  }
+  function revealField(field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) {
+    const panel = field.closest<HTMLElement>('[data-recipe-panel]');
+    if (panel) flushSync(() => changeSection(Number(panel.dataset.recipePanel)));
+    let details = field.closest('details');
+    while (details) {
+      details.open = true;
+      details = details.parentElement?.closest('details') ?? null;
+    }
+    field.focus();
+    field.reportValidity();
+  }
+  async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (saving.current || copyController.current || pendingCopy) return;
+    if (saving.current || copyController.current || pendingCopy || loading || loadError) return;
     setError('');
+    const invalid = e.currentTarget.querySelector<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >('input:invalid, select:invalid, textarea:invalid');
+    if (invalid) {
+      revealField(invalid);
+      return;
+    }
     if (!payload.current) {
       try {
-        if (!valid) throw Error('Adicione insumos ou receitas base e confira as quantidades.');
-        if (name.trim().length < 2) throw Error('Informe o nome da receita.');
+        if (name.trim().length < 2) {
+          if (nameInput.current) revealField(nameInput.current);
+          throw Error('Informe o nome da receita.');
+        }
+        try {
+          parseQuantity(outputQuantity);
+        } catch {
+          changeSection(0);
+          throw Error('Informe uma quantidade válida para o rendimento da preparação.');
+        }
+        if (!valid) {
+          changeSection(1);
+          throw Error('Adicione insumos ou receitas base e confira as quantidades.');
+        }
         if (
           costMode === 'units' &&
           product &&
           (!/^\d{1,7}$/.test(yieldQuantity) ||
             Number(yieldQuantity) < 1 ||
             Number(yieldQuantity) > 1000000)
-        )
+        ) {
+          changeSection(2);
           throw Error('Informe o rendimento de 1 a 1.000.000 unidades.');
+        }
         if (
           costMode === 'weight' &&
           presentations.length &&
           measureUnits.includes(outputUnit) &&
           !['g', 'kg'].includes(outputUnit)
-        )
+        ) {
+          changeSection(0);
           throw Error('Informe o rendimento da preparação em g ou kg para calcular por peso.');
+        }
         if (
           costMode === 'weight' &&
           presentations.some(
@@ -819,8 +865,10 @@ function RecipeModal({
               !p.product.weight_grams ||
               p.packaging.some((l) => l.kind !== 'material' || recipeLineCost(l) === null),
           )
-        )
+        ) {
+          changeSection(2);
           throw Error('Confira os pesos e as quantidades de embalagem.');
+        }
         payload.current = {
           p_cost_mode: costMode,
           p_presentations:
@@ -903,7 +951,7 @@ function RecipeModal({
   return (
     <dialog
       ref={dialog}
-      className="sale-dialog"
+      className="sale-dialog recipe-dialog"
       aria-labelledby="recipe-title"
       onCancel={(e) => {
         if (saving.current) e.preventDefault();
@@ -914,325 +962,434 @@ function RecipeModal({
         } else onClose();
       }}
     >
-      <form onSubmit={save}>
-        <div className="form-heading">
-          <h2 id="recipe-title">{recipe ? 'Editar receita' : 'Nova receita'}</h2>
-          <button
-            type="button"
-            className="form-close"
-            disabled={busy}
-            onClick={onClose}
-            aria-label="Fechar formulário de receita"
-            title="Fechar"
-          >
-            <span aria-hidden="true">✕</span>
-          </button>
-        </div>
-        {!recipe && (
-          <>
-            <details
-              ref={copyPanel}
-              className="recipe-copy"
-              onToggle={(e) => {
-                if (!e.currentTarget.open) setPendingCopy(null);
-              }}
+      <form onSubmit={save} noValidate>
+        <header className="recipe-dialog-header">
+          <div className="form-heading">
+            <h2 id="recipe-title">{recipe ? 'Editar receita' : 'Nova receita'}</h2>
+            <button
+              type="button"
+              className="form-close"
+              disabled={busy}
+              onClick={onClose}
+              aria-label="Fechar formulário de receita"
+              title="Fechar"
             >
-              <summary
-                aria-disabled={copying || undefined}
-                onClick={(e) => {
-                  if (copying) e.preventDefault();
-                }}
-              >
-                Começar copiando outra receita
-              </summary>
-              <p className="fine">
-                Copia insumos, receitas base, categoria, quantidades, rendimentos e observações. As
-                apresentações e suas embalagens ficam em branco para configurar a nova receita.
-              </p>
-              <SearchSelect
-                label="Receita para copiar"
-                value={copySource ? { id: copySource.id, label: copySource.name } : null}
-                load={loadBases}
-                placeholder="Buscar receita pelo nome"
-                disabled={busy || uncertain || copying || Boolean(pendingCopy)}
-                onSelect={(option) => {
-                  setCopySource(option ? (option as RecipeOption).recipe : null);
-                  setCopyError('');
-                }}
-              />
-              {pendingCopy ? (
-                <div
-                  role="group"
-                  aria-labelledby="copy-replace-title"
-                  className="recipe-copy-confirm"
-                >
-                  <p id="copy-replace-title">
-                    Substituir o preenchimento atual pela receita “{pendingCopy.name}”? Os dados que
-                    você digitou serão substituídos somente se a cópia for carregada.
-                  </p>
-                  <div className="recipe-copy-actions">
-                    <button
-                      ref={keepDraftButton}
-                      type="button"
-                      onClick={() => {
-                        restoreCopyFocus.current = true;
-                        setPendingCopy(null);
-                      }}
-                    >
-                      Manter preenchimento
-                    </button>
-                    <button type="button" onClick={() => void copyRecipe(pendingCopy)}>
-                      Substituir preenchimento
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  ref={copyButton}
-                  type="button"
-                  disabled={!copySource || busy || uncertain || copying}
-                  onClick={requestCopy}
-                >
-                  {copying ? 'Copiando receita…' : 'Copiar para o formulário'}
-                </button>
-              )}
-              {copying && (
-                <p role="status">Carregando a receita. Aguarde para revisar os campos.</p>
-              )}
-              {copyError && <p role="alert">{copyError}</p>}
-            </details>
-            {copyStatus && (
-              <p role="status" className="fine">
-                {copyStatus}
-              </p>
-            )}
-          </>
-        )}
-        {loading ? (
-          <p role="status">Carregando receita…</p>
-        ) : loadError ? (
-          <p role="alert">
-            Não foi possível carregar.{' '}
-            <button type="button" onClick={() => setRetry((v) => v + 1)}>
-              Tentar novamente
+              <span aria-hidden="true">✕</span>
             </button>
-          </p>
-        ) : (
-          <fieldset disabled={busy || uncertain || copying || Boolean(pendingCopy)}>
-            <label>
-              Nome da receita
-              <input
-                ref={nameInput}
-                required
-                minLength={2}
-                maxLength={120}
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Pipoca de chocolate"
-              />
-            </label>
-            <div className="sale-fields">
-              <label>
-                Rendimento da preparação
-                <input
-                  required
-                  inputMode="decimal"
-                  value={outputQuantity}
-                  onChange={(e) => setOutputQuantity(e.target.value)}
-                  placeholder="1"
-                />
-              </label>
-              <label>
-                Unidade do rendimento
-                <select
-                  value={outputUnit}
-                  onChange={(e) => setOutputUnit(e.target.value as MeasureUnit)}
-                >
-                  {measureUnits.map((u) => (
-                    <option key={u} value={u}>
-                      {u}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="fine">
-              Quantidade pronta que esta receita produz. Exemplo: a caramelizada rende 1 kg; usar
-              300 g dela na receita de morango inclui 30% do custo da caramelizada.
-            </p>
-            <label>
-              Cálculo do custo
-              <select
-                value={costMode}
-                onChange={(e) => setCostMode(e.target.value as 'units' | 'weight')}
+          </div>
+          <div className="recipe-form-tabs" role="tablist" aria-label="Seções da receita">
+            {recipeFormTabs.map((label, index) => (
+              <button
+                key={label}
+                type="button"
+                role="tab"
+                id={`recipe-tab-${index}`}
+                aria-controls={`recipe-panel-${index}`}
+                aria-selected={section === index}
+                tabIndex={section === index ? 0 : -1}
+                disabled={locked || loading || loadError}
+                onClick={() => changeSection(index)}
+                onKeyDown={(event) => {
+                  let next: number;
+                  if (event.key === 'ArrowRight') next = (index + 1) % recipeFormTabs.length;
+                  else if (event.key === 'ArrowLeft')
+                    next = (index + recipeFormTabs.length - 1) % recipeFormTabs.length;
+                  else if (event.key === 'Home') next = 0;
+                  else if (event.key === 'End') next = recipeFormTabs.length - 1;
+                  else return;
+                  event.preventDefault();
+                  changeSection(next, true);
+                }}
               >
-                <option value="weight">Por peso · várias apresentações</option>
-                <option value="units">Por unidades de venda · uma apresentação</option>
-              </select>
-            </label>
-            {costMode === 'units' && (
-              <>
-                <SearchSelect
-                  label="Produto da receita (opcional)"
-                  value={product}
-                  load={searchSaleProducts}
-                  onSelect={(option) => {
-                    if (option) {
-                      setPresentations([
-                        { product: (option as ProductOption).product, packaging: [] },
-                      ]);
-                      setLegacyProduct({
-                        ...option,
-                        category: (option as ProductOption).product.category,
-                      });
-                    } else {
-                      if (product?.category)
-                        setBaseCategory({ id: product.category, label: product.category });
-                      setLegacyProduct(null);
-                      setPresentations([]);
-                    }
+                <span className="recipe-tab-number" aria-hidden="true">
+                  {index + 1}
+                </span>
+                {label}
+              </button>
+            ))}
+          </div>
+        </header>
+        <div className="recipe-dialog-content" ref={content}>
+          {!recipe && (
+            <div hidden={section !== 0}>
+              <details
+                ref={copyPanel}
+                className="recipe-copy"
+                onToggle={(e) => {
+                  if (!e.currentTarget.open) setPendingCopy(null);
+                }}
+              >
+                <summary
+                  aria-disabled={copying || undefined}
+                  onClick={(e) => {
+                    if (copying) e.preventDefault();
                   }}
-                  disabled={busy || uncertain}
-                  placeholder="Buscar produto"
-                />
+                >
+                  Começar copiando outra receita
+                </summary>
                 <p className="fine">
-                  Para uma receita usada apenas como base, deixe o produto em branco.
+                  Copia insumos, receitas base, categoria, quantidades, rendimentos e observações.
+                  As apresentações e suas embalagens ficam em branco para configurar a nova receita.
                 </p>
-                {presentations.some((p) => p.packaging.length > 0) || presentations.length > 1 ? (
-                  <p role="status" className="fine">
-                    Ao salvar por unidades, as apresentações e embalagens do cálculo por peso serão
-                    removidas. Neste modo, inclua as embalagens nos insumos da receita.
-                  </p>
-                ) : null}
-              </>
-            )}
-            {product ? (
-              <>
-                <label>
-                  Categoria
-                  <input
-                    value={product.category ?? 'Sem categoria'}
-                    readOnly
-                    aria-describedby="recipe-category-help"
-                  />
-                </label>
-                <p id="recipe-category-help" className="fine">
-                  A categoria acompanha o produto selecionado. Para alterá-la, edite o produto.
-                </p>
-              </>
-            ) : (
-              <>
                 <SearchSelect
-                  label="Categoria (opcional)"
-                  value={baseCategory}
-                  load={searchRecipeCategories}
-                  onSelect={setBaseCategory}
+                  label="Receita para copiar"
+                  value={copySource ? { id: copySource.id, label: copySource.name } : null}
+                  load={loadBases}
+                  placeholder="Buscar receita pelo nome"
                   disabled={busy || uncertain || copying || Boolean(pendingCopy)}
-                  placeholder="Escolher categoria"
+                  onSelect={(option) => {
+                    setCopySource(option ? (option as RecipeOption).recipe : null);
+                    setCopyError('');
+                  }}
                 />
-                <p className="fine">
-                  Use uma das categorias do catálogo ou deixe a receita sem categoria.
-                </p>
-              </>
-            )}
-            {recipe &&
-              !recipe.product_id &&
-              recipe.product_label !== 'Receita base' &&
-              !product && (
-                <p>
-                  Produto removido do catálogo: {recipe.product_label}. Você pode manter a receita
-                  ou selecionar outro produto.
+                {pendingCopy ? (
+                  <div
+                    role="group"
+                    aria-labelledby="copy-replace-title"
+                    className="recipe-copy-confirm"
+                  >
+                    <p id="copy-replace-title">
+                      Substituir o preenchimento atual pela receita “{pendingCopy.name}”? Os dados
+                      que você digitou serão substituídos somente se a cópia for carregada.
+                    </p>
+                    <div className="recipe-copy-actions">
+                      <button
+                        ref={keepDraftButton}
+                        type="button"
+                        onClick={() => {
+                          restoreCopyFocus.current = true;
+                          setPendingCopy(null);
+                        }}
+                      >
+                        Manter preenchimento
+                      </button>
+                      <button type="button" onClick={() => void copyRecipe(pendingCopy)}>
+                        Substituir preenchimento
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    ref={copyButton}
+                    type="button"
+                    disabled={!copySource || busy || uncertain || copying}
+                    onClick={requestCopy}
+                  >
+                    {copying ? 'Copiando receita…' : 'Copiar para o formulário'}
+                  </button>
+                )}
+                {copying && (
+                  <p role="status">Carregando a receita. Aguarde para revisar os campos.</p>
+                )}
+                {copyError && <p role="alert">{copyError}</p>}
+              </details>
+              {copyStatus && (
+                <p role="status" className="fine">
+                  {copyStatus}
                 </p>
               )}
-            {costMode === 'units' && product && (
-              <>
+            </div>
+          )}
+          {loading ? (
+            <p role="status">Carregando receita…</p>
+          ) : loadError ? (
+            <p role="alert">
+              Não foi possível carregar.{' '}
+              <button type="button" onClick={() => setRetry((v) => v + 1)}>
+                Tentar novamente
+              </button>
+            </p>
+          ) : (
+            <fieldset disabled={locked}>
+              <section
+                role="tabpanel"
+                id="recipe-panel-0"
+                aria-labelledby="recipe-tab-0"
+                data-recipe-panel="0"
+                hidden={section !== 0}
+                tabIndex={0}
+              >
+                <h3>Sobre a receita</h3>
+                <p className="fine">Defina o nome, o rendimento e como o custo será calculado.</p>
                 <label>
-                  Rendimento (unidades de venda)
+                  Nome da receita
                   <input
-                    type="number"
+                    ref={nameInput}
                     required
-                    min="1"
-                    max="1000000"
-                    value={yieldQuantity}
-                    onChange={(e) => setYield(e.target.value)}
+                    minLength={2}
+                    maxLength={120}
+                    autoFocus
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Pipoca de chocolate"
                   />
                 </label>
+                {product ? (
+                  <>
+                    <label>
+                      Categoria
+                      <input
+                        value={product.category ?? 'Sem categoria'}
+                        readOnly
+                        aria-describedby="recipe-category-help"
+                      />
+                    </label>
+                    <p id="recipe-category-help" className="fine">
+                      A categoria acompanha o produto selecionado. Para alterá-la, edite o produto.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <SearchSelect
+                      label="Categoria (opcional)"
+                      value={baseCategory}
+                      load={searchRecipeCategories}
+                      onSelect={setBaseCategory}
+                      disabled={busy || uncertain || copying || Boolean(pendingCopy)}
+                      placeholder="Escolher categoria"
+                    />
+                    <p className="fine">
+                      Use uma das categorias do catálogo ou deixe a receita sem categoria.
+                    </p>
+                  </>
+                )}
+                <div className="sale-fields">
+                  <label>
+                    Rendimento da preparação
+                    <input
+                      required
+                      inputMode="decimal"
+                      value={outputQuantity}
+                      onChange={(e) => setOutputQuantity(e.target.value)}
+                      placeholder="1"
+                    />
+                  </label>
+                  <label>
+                    Unidade do rendimento
+                    <select
+                      value={outputUnit}
+                      onChange={(e) => setOutputUnit(e.target.value as MeasureUnit)}
+                    >
+                      {measureUnits.map((u) => (
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
                 <p className="fine">
-                  Quantas unidades da apresentação selecionada esta receita produz? Exemplo: 10
-                  pacotes de 100 g → rendimento 10.
+                  Quantidade pronta que esta receita produz. Exemplo: a caramelizada rende 1 kg;
+                  usar 300 g dela na receita de morango inclui 30% do custo da caramelizada.
                 </p>
-              </>
-            )}
-            <h3>Insumos da preparação</h3>
-            {costMode === 'weight' && (
-              <p className="fine">
-                Aqui entram os ingredientes da receita pronta. Cadastre saco, etiqueta e laço em
-                Embalagens por pacote, abaixo, na apresentação correspondente, para evitar contar
-                duas vezes.
-              </p>
-            )}
-            <RecipeLinesEditor
-              lines={lines}
-              onChange={setLines}
-              disabled={busy || uncertain || copying || Boolean(pendingCopy)}
-              loadBases={loadBases}
-            />
-            <p className="sale-sum">
-              Custo da receita <strong>{valid ? money(total) : '—'}</strong>
-            </p>
-            {costMode === 'units' && product && (
-              <p className="sale-sum">
-                Custo por unidade{' '}
-                <strong>
-                  {valid && Number(yieldQuantity) > 0 ? money(total / Number(yieldQuantity)) : '—'}
-                </strong>
-              </p>
-            )}
-            {costMode === 'weight' && (
-              <RecipePresentations
-                value={presentations}
-                onChange={(p) => {
-                  if (!p.length && product?.category)
-                    setBaseCategory({ id: product.category, label: product.category });
-                  setPresentations(p);
-                }}
-                total={valid ? total : null}
-                outputQuantity={outputQuantity}
-                outputUnit={outputUnit}
-                disabled={busy || uncertain || copying || Boolean(pendingCopy)}
-              />
-            )}
-            <p className="fine">
-              Prévia com os preços consultados. Ao salvar, o banco calcula com os preços atuais.
-              Custos de mão de obra, energia e perdas não estão incluídos automaticamente.
-            </p>
-            <label>
-              Observações
-              <textarea value={notes} maxLength={1000} onChange={(e) => setNotes(e.target.value)} />
-            </label>
-          </fieldset>
-        )}
-        {error && <p role="alert">{error}</p>}
-        <div className="sale-actions">
-          <button type="button" disabled={busy} onClick={onClose}>
-            Cancelar
-          </button>
-          <button
-            className="sale-primary"
-            disabled={
-              busy || copying || Boolean(pendingCopy) || loading || loadError || !lines.length
-            }
-          >
-            {busy
-              ? 'Salvando…'
-              : uncertain
-                ? 'Confirmar novamente'
-                : copyStatus
-                  ? 'Salvar nova receita'
-                  : 'Salvar receita'}
-          </button>
+                <label>
+                  Cálculo do custo
+                  <select
+                    value={costMode}
+                    onChange={(e) => setCostMode(e.target.value as 'units' | 'weight')}
+                  >
+                    <option value="weight">Por peso · várias apresentações</option>
+                    <option value="units">Por unidades de venda · uma apresentação</option>
+                  </select>
+                </label>
+                <div>
+                  <label htmlFor="recipe-notes">Observações</label>
+                  <textarea
+                    id="recipe-notes"
+                    value={notes}
+                    maxLength={1000}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+              </section>
+              <section
+                role="tabpanel"
+                id="recipe-panel-1"
+                aria-labelledby="recipe-tab-1"
+                data-recipe-panel="1"
+                hidden={section !== 1}
+                tabIndex={0}
+              >
+                <h3>Insumos da preparação</h3>
+                {costMode === 'weight' && (
+                  <p className="fine">
+                    Aqui entram os ingredientes da receita pronta. Cadastre saco, etiqueta e laço em
+                    Embalagens por pacote, na aba Apresentações, na apresentação correspondente,
+                    para evitar contar duas vezes.
+                  </p>
+                )}
+                <RecipeLinesEditor
+                  lines={lines}
+                  onChange={setLines}
+                  disabled={busy || uncertain || copying || Boolean(pendingCopy)}
+                  loadBases={loadBases}
+                />
+              </section>
+              <section
+                role="tabpanel"
+                id="recipe-panel-2"
+                aria-labelledby="recipe-tab-2"
+                data-recipe-panel="2"
+                hidden={section !== 2}
+                tabIndex={0}
+              >
+                {costMode === 'units' && (
+                  <>
+                    <h3>Apresentação e custo por unidade</h3>
+                    <p className="fine">
+                      Escolha o produto e informe quantas unidades esta preparação rende.
+                    </p>
+                  </>
+                )}
+                {costMode === 'units' && (
+                  <>
+                    <SearchSelect
+                      label="Produto da receita (opcional)"
+                      value={product}
+                      load={searchSaleProducts}
+                      onSelect={(option) => {
+                        if (option) {
+                          setPresentations([
+                            { product: (option as ProductOption).product, packaging: [] },
+                          ]);
+                          setLegacyProduct({
+                            ...option,
+                            category: (option as ProductOption).product.category,
+                          });
+                        } else {
+                          if (product?.category)
+                            setBaseCategory({ id: product.category, label: product.category });
+                          setLegacyProduct(null);
+                          setPresentations([]);
+                        }
+                      }}
+                      disabled={busy || uncertain}
+                      placeholder="Buscar produto"
+                    />
+                    <p className="fine">
+                      Para uma receita usada apenas como base, deixe o produto em branco.
+                    </p>
+                    {presentations.some((p) => p.packaging.length > 0) ||
+                    presentations.length > 1 ? (
+                      <p role="status" className="fine">
+                        Ao salvar por unidades, as apresentações e embalagens do cálculo por peso
+                        serão removidas. Neste modo, inclua as embalagens nos insumos da receita.
+                      </p>
+                    ) : null}
+                  </>
+                )}
+                {recipe &&
+                  !recipe.product_id &&
+                  recipe.product_label !== 'Receita base' &&
+                  !product && (
+                    <p>
+                      Produto removido do catálogo: {recipe.product_label}. Você pode manter a
+                      receita ou selecionar outro produto.
+                    </p>
+                  )}
+                {costMode === 'units' && product && (
+                  <>
+                    <label>
+                      Rendimento (unidades de venda)
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        max="1000000"
+                        value={yieldQuantity}
+                        onChange={(e) => setYield(e.target.value)}
+                      />
+                    </label>
+                    <p className="fine">
+                      Quantas unidades da apresentação selecionada esta receita produz? Exemplo: 10
+                      pacotes de 100 g → rendimento 10.
+                    </p>
+                  </>
+                )}
+                {costMode === 'units' && product && (
+                  <p className="sale-sum">
+                    Custo por unidade{' '}
+                    <strong>
+                      {valid && Number(yieldQuantity) > 0
+                        ? money(total / Number(yieldQuantity))
+                        : '—'}
+                    </strong>
+                  </p>
+                )}
+                {costMode === 'weight' && (
+                  <RecipePresentations
+                    value={presentations}
+                    onChange={(p) => {
+                      if (!p.length && product?.category)
+                        setBaseCategory({ id: product.category, label: product.category });
+                      setPresentations(p);
+                    }}
+                    total={valid ? total : null}
+                    outputQuantity={outputQuantity}
+                    outputUnit={outputUnit}
+                    disabled={busy || uncertain || copying || Boolean(pendingCopy)}
+                  />
+                )}
+                <p className="fine">
+                  Prévia com os preços consultados. Ao salvar, o banco calcula com os preços atuais.
+                  Custos de mão de obra, energia e perdas não estão incluídos automaticamente.
+                </p>
+              </section>
+            </fieldset>
+          )}
         </div>
+        <footer className="recipe-dialog-footer">
+          <p className="recipe-cost-summary">
+            <span>
+              Custo da preparação{' '}
+              <small>
+                {lines.length} {lines.length === 1 ? 'item' : 'itens'}
+              </small>
+            </span>
+            <strong>{valid ? money(total) : '—'}</strong>
+          </p>
+          {error && <p role="alert">{error}</p>}
+          <div className="sale-actions">
+            <button type="button" disabled={busy} onClick={onClose}>
+              Cancelar
+            </button>
+            {section > 0 && !uncertain && (
+              <button
+                type="button"
+                disabled={locked}
+                onClick={() => changeSection(section - 1, true)}
+              >
+                Voltar
+              </button>
+            )}
+            {section < recipeFormTabs.length - 1 && !uncertain ? (
+              <button
+                key="next-section"
+                type="button"
+                className="sale-primary"
+                disabled={locked || loading || loadError}
+                onClick={() => changeSection(section + 1, true)}
+              >
+                {section === 0 ? 'Próximo: ingredientes' : 'Próximo: apresentações'}
+              </button>
+            ) : (
+              <button
+                key="save-recipe"
+                type="submit"
+                className="sale-primary"
+                disabled={busy || copying || Boolean(pendingCopy) || loading || loadError}
+              >
+                {busy
+                  ? 'Salvando…'
+                  : uncertain
+                    ? 'Confirmar novamente'
+                    : copyStatus
+                      ? 'Salvar nova receita'
+                      : 'Salvar receita'}
+              </button>
+            )}
+          </div>
+        </footer>
       </form>
     </dialog>
   );

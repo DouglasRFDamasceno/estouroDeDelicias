@@ -11,7 +11,7 @@ Uma única aplicação React + TypeScript, construída pelo Vite. Ionic oferece 
 - `src/domain`: cálculos e formatação compartilhados por web e aplicativos.
 - `supabase/migrations`: SQL versionado das tabelas, políticas e funções implementadas.
 
-A etapa de Auth foi implementada no código: cadastro, login, recuperação, callbacks web e perfil privado em `/conta`. Veja [ativação e segurança](supabase.md). `/demo/*` mantém o endereço original, mas suas seções consultam dados reais. Produtos são consultáveis por contas confirmadas; clientes, vendas, custos e indicadores exigem administrador confirmado. O catálogo da Estouro é compartilhado, sem multiempresa implementada. Perfis continuam privados ao titular.
+A etapa de Auth foi implementada no código: cadastro, login, recuperação, callbacks web e perfil privado em `/conta`. Veja [ativação e segurança](supabase.md). `/demo/*` mantém o endereço original, mas suas seções consultam dados reais. Produtos são consultáveis por contas confirmadas; clientes, vendas, custos e indicadores exigem administrador confirmado. O catálogo da Estouros é compartilhado, sem multiempresa implementada. Perfis continuam privados ao titular.
 
 ## Etapas pequenas e critérios de validação
 

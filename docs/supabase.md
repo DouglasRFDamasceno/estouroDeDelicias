@@ -58,10 +58,10 @@ Authentication → URL Configuration:
 
 No projeto de produção, salvar:
 
-- **Site URL:** `https://estourodedelicias.vercel.app` (sem barra final).
-- **Redirect URLs:** `https://estourodedelicias.vercel.app/auth/callback`.
-- **Redirect URLs:** `https://estourodedelicias.vercel.app/auth/invite`.
-- **Redirect URLs:** `https://estourodedelicias.vercel.app/auth/recovery`.
+- **Site URL:** `https://estourosdedelicias.vercel.app` (sem barra final).
+- **Redirect URLs:** `https://estourosdedelicias.vercel.app/auth/callback`.
+- **Redirect URLs:** `https://estourosdedelicias.vercel.app/auth/invite`.
+- **Redirect URLs:** `https://estourosdedelicias.vercel.app/auth/recovery`.
 
 Não manter localhost como Site URL do projeto de produção. Endereços locais, quando necessários para desenvolvimento, são redirects adicionais exatos, não a URL principal. Para convites enviados pelo próprio painel Supabase, usar o template `supabase/templates/invite.html`; ele usa SiteURL e o callback de convite, mesmo sem redirectTo informado.
 

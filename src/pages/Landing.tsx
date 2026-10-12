@@ -13,7 +13,7 @@ export function Landing() {
       <IonContent>
         <div className="gourmet landing-modern">
           <header className="g-header">
-            <Link to="/" aria-label="Estouro de Delícias, início">
+            <Link to="/" aria-label="Estouros de Delícias, início">
               <Brand />
             </Link>
             <nav aria-label="Menu principal">

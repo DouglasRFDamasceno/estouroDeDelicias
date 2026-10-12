@@ -10,7 +10,7 @@ export function AuthNotice({ notFound = false }: { notFound?: boolean }) {
           <Link to="/">
             <Brand />
           </Link>
-          <p className="eyebrow">ESTOURO DE DELÍCIAS</p>
+          <p className="eyebrow">ESTOUROS DE DELÍCIAS</p>
           <h1>
             {notFound
               ? 'Página não encontrada'

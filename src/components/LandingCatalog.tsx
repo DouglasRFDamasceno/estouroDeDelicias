@@ -181,7 +181,7 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 <article key={flavor.name} className={`g-flavor ${flavor.color}`}>
                   <div className="g-flavor-art" aria-hidden="true">
                     <span className="g-flavor-symbol">{flavor.symbol}</span>
-                    <span className="g-art-label">ESTOURO DE DELÍCIAS</span>
+                    <span className="g-art-label">ESTOUROS DE DELÍCIAS</span>
                     <span className="g-art-word">{flavor.name}</span>
                     <span className="g-art-size">GOURMET · {packageSizes[size]} g</span>
                   </div>

@@ -5,7 +5,7 @@ export function Brand() {
         ✳
       </span>
       <span>
-        Estouro<span className="brand-small">de delícias · gourmet</span>
+        Estouros<span className="brand-small">de delícias · gourmet</span>
       </span>
     </span>
   );

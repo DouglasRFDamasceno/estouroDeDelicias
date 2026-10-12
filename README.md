@@ -1,6 +1,6 @@
 > **Regra atual de acesso:** cadastro somente por convite de administrador. Veja [o guia de administração](docs/admin.md). O fluxo de cadastro público descrito na etapa anterior foi substituído. Migrações e criação do primeiro admin ainda dependem de aplicação remota.
 
-# Estouro de Delícias — etapa 1
+# Estouros de Delícias — etapa 1
 
 Vitrine pública de delícias gourmet, inicialmente pipocas, e área de gestão de custos e vendas com layout Ionic demonstrativo em português. **Cadastro e login integrados ao código via Supabase Auth.** A ativação depende da configuração do seu projeto e aplicação da migração: siga [docs/supabase.md](docs/supabase.md). A área `/demo` permanece fictícia; não há cadastros de vendas nem publicação.
 

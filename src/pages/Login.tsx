@@ -72,7 +72,7 @@ export function Login() {
       <IonContent>
         <div className="gourmet login-screen">
           <header className="login-header">
-            <Link to="/" aria-label="Estouro de Delícias, início">
+            <Link to="/" aria-label="Estouros de Delícias, início">
               <Brand />
             </Link>
             <Link className="login-back" to="/">
@@ -99,7 +99,7 @@ export function Login() {
               <div className="login-illustration" aria-hidden="true">
                 <span>♡</span>
                 <strong>
-                  Estouro
+                  Estouros
                   <br />
                   <i>de delícias</i>
                 </strong>
@@ -188,7 +188,7 @@ export function Login() {
             </section>
           </main>
           <footer className="login-footer">
-            Estouro de Delícias · Um cuidado que vai além do sabor.
+            Estouros de Delícias · Um cuidado que vai além do sabor.
           </footer>
         </div>
       </IonContent>

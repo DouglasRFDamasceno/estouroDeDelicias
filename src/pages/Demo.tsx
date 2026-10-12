@@ -136,7 +136,7 @@ export function Demo() {
             <div className="demo-content">
               <div className="page-heading">
                 <div>
-                  <p className="eyebrow">ESTOURO DE DELÍCIAS</p>
+                  <p className="eyebrow">ESTOUROS DE DELÍCIAS</p>
                   <h1>
                     {section === 'dashboard'
                       ? 'Seu negócio, em perspectiva.'

@@ -243,6 +243,7 @@ export function Sales() {
                         ] as const
                       ).map(([key, label]) => (
                         <th
+                          scope="col"
                           key={key}
                           aria-sort={
                             sort === key ? (ascending ? 'ascending' : 'descending') : 'none'
@@ -255,14 +256,19 @@ export function Sales() {
                               setPage(1);
                             }}
                           >
-                            {label} {sort === key ? (ascending ? '↑' : '↓') : '↕'}
+                            {label}
+                            <span aria-hidden="true">
+                              {sort === key ? (ascending ? '↑' : '↓') : '↕'}
+                            </span>
                           </button>
                         </th>
                       ))}
-                      <th>Recebido</th>
-                      <th>A receber</th>
-                      <th>Pagamento</th>
-                      <th>Ações</th>
+                      <th scope="col">Recebido</th>
+                      <th scope="col">A receber</th>
+                      <th scope="col">Pagamento</th>
+                      <th scope="col" className="table-actions">
+                        Ações
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -274,7 +280,7 @@ export function Sales() {
                         <td>{money(s.received_cents)}</td>
                         <td>{money(s.total_cents - s.received_cents)}</td>
                         <td>{methods[s.payment_method]}</td>
-                        <td>
+                        <td className="table-actions">
                           <ActionIconButton
                             action="edit"
                             label={`Editar ${s.customer}, ${dateBR(s.sale_date)}`}

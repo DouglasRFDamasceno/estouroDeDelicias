@@ -508,6 +508,7 @@ function DashboardTable({
                 <tr>
                   {columns.map(([key, label]) => (
                     <th
+                      scope="col"
                       key={key}
                       aria-sort={sort === key ? (ascending ? 'ascending' : 'descending') : 'none'}
                     >
@@ -519,14 +520,17 @@ function DashboardTable({
                           setPage(1);
                         }}
                       >
-                        {label} {sort === key ? (ascending ? '↑' : '↓') : '↕'}
+                        {label}
+                        <span aria-hidden="true">
+                          {sort === key ? (ascending ? '↑' : '↓') : '↕'}
+                        </span>
                       </button>
                     </th>
                   ))}
                   {sales && (
                     <>
-                      <th>Recebido</th>
-                      <th>A receber</th>
+                      <th scope="col">Recebido</th>
+                      <th scope="col">A receber</th>
                     </>
                   )}
                 </tr>

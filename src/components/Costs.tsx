@@ -223,6 +223,7 @@ function CostList({ section }: { section: CostSection }) {
                 <tr>
                   {columns.map(([key, label]) => (
                     <th
+                      scope="col"
                       key={key}
                       aria-sort={sort === key ? (ascending ? 'ascending' : 'descending') : 'none'}
                     >
@@ -234,12 +235,17 @@ function CostList({ section }: { section: CostSection }) {
                           setPage(1);
                         }}
                       >
-                        {label} {sort === key ? (ascending ? '↑' : '↓') : '↕'}
+                        {label}
+                        <span aria-hidden="true">
+                          {sort === key ? (ascending ? '↑' : '↓') : '↕'}
+                        </span>
                       </button>
                     </th>
                   ))}
-                  <th>{materials ? 'Quantidade comprada' : 'Produto e rendimento'}</th>
-                  <th>Ações</th>
+                  <th scope="col">{materials ? 'Quantidade comprada' : 'Produto e rendimento'}</th>
+                  <th scope="col" className="table-actions">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -265,7 +271,7 @@ function CostList({ section }: { section: CostSection }) {
                         </td>
                       </>
                     )}
-                    <td>
+                    <td className="table-actions">
                       <ActionIconButton
                         action="edit"
                         label={`Editar ${row.name}`}

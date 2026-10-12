@@ -384,7 +384,11 @@ export function Products() {
                             </button>
                           </th>
                         ))}
-                        {canManage && <th scope="col">Ações</th>}
+                        {canManage && (
+                          <th scope="col" className="table-actions">
+                            Ações
+                          </th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -395,7 +399,7 @@ export function Products() {
                           <td>{product.presentation}</td>
                           <td className="product-price-cell">{money(product.price_cents)}</td>
                           {canManage && (
-                            <td>
+                            <td className="table-actions">
                               <ActionIconButton
                                 action="edit"
                                 label={`Editar ${product.name}, ${product.presentation}`}

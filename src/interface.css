@@ -126,8 +126,18 @@
   background: #fff3f8;
 }
 .management-shell .product-table thead th {
-  color: #9d1746;
+  color: var(--ui-ink);
   font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  vertical-align: middle;
+  padding: 16px 12px;
+}
+.management-shell .product-table thead th[aria-sort] {
+  color: var(--ui-brand-strong);
 }
 .management-shell .product-table thead button {
   min-height: 44px;
@@ -135,8 +145,13 @@
   background: transparent;
   padding: 4px 0;
   border-radius: 4px;
-  font-size: inherit;
-  font-weight: 700;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  gap: 8px;
+}
+.management-shell .product-table thead button > span[aria-hidden='true'] {
+  flex-shrink: 0;
 }
 .management-shell .product-table td,
 .management-shell .product-table tbody th {
@@ -436,4 +451,9 @@ button.action-icon-button:focus-visible {
 button.action-icon-button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.management-shell .product-table :is(th, td).table-actions {
+  text-align: center;
+  white-space: nowrap;
 }

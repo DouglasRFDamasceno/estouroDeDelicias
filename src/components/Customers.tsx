@@ -193,7 +193,9 @@ export function Customers() {
                     </th>
                   ))}
                   <th scope="col">Identificador</th>
-                  <th scope="col">Ações</th>
+                  <th scope="col" className="table-actions">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -202,7 +204,7 @@ export function Customers() {
                     <th scope="row">{c.name}</th>
                     <td>{date(c.created_at)}</td>
                     <td title={c.id}>{c.id.slice(0, 8)}</td>
-                    <td>
+                    <td className="table-actions">
                       <ActionIconButton
                         action="edit"
                         label={`Editar ${c.name}`}

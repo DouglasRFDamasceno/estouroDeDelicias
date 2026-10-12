@@ -17,6 +17,8 @@ export interface Recipe {
   name: string;
   product_id: string | null;
   product_label: string;
+  category: string | null;
+  base_category: string | null;
   yield_quantity: number;
   output_quantity: number;
   output_unit: MeasureUnit;
@@ -34,7 +36,7 @@ export type RecipeLine = (
 };
 export type CostSection = 'materials' | 'recipes';
 const recipeColumns =
-  'id,name,product_id,product_label,yield_quantity,output_quantity,output_unit,notes,revision,total_cents,unit_cost_cents,raw_total_cents';
+  'id,name,product_id,product_label,category,base_category,yield_quantity,output_quantity,output_unit,notes,revision,total_cents,unit_cost_cents,raw_total_cents';
 export async function loadCostRows(
   section: CostSection,
   page: number,
@@ -43,11 +45,15 @@ export async function loadCostRows(
   sort: string,
   ascending: boolean,
   signal: AbortSignal,
+  category: string | null = null,
 ) {
   const { from, to } = pageRange(page, pageSize);
   const allowed =
-    section === 'materials' ? ['name', 'price_cents'] : ['name', 'total_cents', 'unit_cost_cents'];
-  if (!allowed.includes(sort) || name.length > 120) throw Error('Consulta inválida');
+    section === 'materials'
+      ? ['name', 'price_cents']
+      : ['name', 'category', 'total_cents', 'unit_cost_cents'];
+  if (!allowed.includes(sort) || name.length > 120 || (category?.length ?? 0) > 80)
+    throw Error('Consulta inválida');
   const columns =
     section === 'materials'
       ? 'id,name,purchase_quantity,purchase_unit,price_cents,revision'
@@ -56,6 +62,7 @@ export async function loadCostRows(
     .from(section === 'materials' ? 'materials' : 'recipe_costs')
     .select(columns, { count: 'exact' });
   if (name.trim()) query = query.ilike('name_search', searchPattern(name));
+  if (section === 'recipes' && category !== null) query = query.eq('category', category);
   const result = await query
     .order(sort, { ascending })
     .order('id')
@@ -63,6 +70,21 @@ export async function loadCostRows(
     .abortSignal(signal);
   if (result.error || result.count === null) throw result.error ?? Error('Contagem indisponível');
   return { rows: result.data as unknown as (Material | Recipe)[], total: result.count };
+}
+export async function searchRecipeCategories(search: string, page: number, signal: AbortSignal) {
+  const { from, to } = pageRange(page, 10);
+  if (search.length > 120) throw Error('Consulta inválida');
+  let query = requireSupabase().from('recipe_categories').select('category', { count: 'exact' });
+  if (search.trim()) query = query.ilike('category_search', searchPattern(search));
+  const result = await query.order('category').range(from, to).abortSignal(signal);
+  if (result.error || result.count === null) throw result.error ?? Error('Contagem indisponível');
+  return {
+    rows: result.data.map(({ category }: { category: string }) => ({
+      id: category,
+      label: category,
+    })),
+    total: result.count,
+  };
 }
 export interface MaterialOption extends SearchOption {
   material: Material;

@@ -3,7 +3,7 @@
 Em **Custos e despesas**, há dois cadastros reais:
 
 1. **Insumos**: nome, quantidade comprada, unidade e preço total dessa quantidade. Exemplo: Chocolate, 1 kg, R$ 30,00. Embalagens também podem ser insumos: 100 unidades por R$ 20,00.
-2. **Receitas e custos**: nome, rendimento da preparação (g/kg, ml/l ou un), produto/apresentação opcional do catálogo, rendimento em unidades de venda e quantidades usadas de cada insumo ou receita base. As buscas por produtos, insumos e receitas são paginadas no backend.
+2. **Receitas e custos**: nome, categoria, rendimento da preparação (g/kg, ml/l ou un), produto/apresentação opcional do catálogo, rendimento em unidades de venda e quantidades usadas de cada insumo ou receita base. As buscas por produtos, categorias, insumos e receitas são paginadas no backend.
 
 ## Usar uma receita dentro de outra
 
@@ -27,7 +27,7 @@ Cada cadastro permite criar, editar e remover, com confirmação na exclusão. I
 
 ## Copiar uma receita para um novo cadastro
 
-Em **Nova receita**, abra **Começar copiando outra receita**, busque pelo nome e selecione a receita desejada. Clique em **Copiar para o formulário** para preencher insumos, receitas base, quantidades, rendimentos e observações. A busca continua paginada no backend.
+Em **Nova receita**, abra **Começar copiando outra receita**, busque pelo nome e selecione a receita desejada. Clique em **Copiar para o formulário** para preencher insumos, receitas base, categoria, quantidades, rendimentos e observações. A busca continua paginada no backend.
 
 O formulário sugere **Cópia de…** e seleciona o nome para edição. O produto fica em branco para escolher o produto da nova receita, evitando vinculá-la por engano ao sabor original. Ao escolher um produto, o rendimento de venda copiado é reapresentado. Revise os campos e clique em **Salvar nova receita**; copiar para o formulário ainda não grava nenhum cadastro.
 
@@ -35,7 +35,21 @@ Se houver preenchimento, escolha **Manter preenchimento** ou **Substituir preenc
 
 A cópia recebe um identificador novo e mantém a original. Alterar os ingredientes ou as quantidades da receita original depois não modifica a cópia. Insumos e receitas base continuam compartilhando os mesmos cadastros de referência, então alterações de preços e custos dessas bases seguem refletidas nas duas receitas. **Adicionar receita base** continua sendo a opção para consumir parte de uma preparação, com o custo proporcional ao rendimento.
 
-Esta opção utiliza as consultas e a RPC existentes; não requer outra migração de banco.
+A cópia utiliza as mesmas consultas e a RPC de gravação das receitas.
+
+## Categorias das receitas
+
+Receitas vinculadas a um produto exibem sua categoria automaticamente. Esse campo é somente leitura: ao editar a categoria no cadastro do produto, as receitas vinculadas passam a mostrar a nova categoria, sem duplicar a informação.
+
+Receitas base, sem produto, têm **Categoria (opcional)**. A busca oferece as categorias existentes nos produtos e preserva opções ainda usadas por outras bases. É possível limpar a seleção e salvar sem categoria. Os cadastros antigos continuam válidos.
+
+Ao copiar uma receita, sua categoria é sugerida na nova base. Ao selecionar um produto, prevalece a categoria dele. Se remover o produto no formulário, a categoria dele fica sugerida para a base; revise ou limpe antes de salvar. Se um produto for excluído do catálogo, a receita preservada fica sem categoria até escolher outra na edição.
+
+A listagem exibe a categoria, permite ordenar por ela e oferece **Filtrar por categoria**, aplicado ao selecionar uma opção. **Limpar** remove os filtros por nome e categoria. Busca, filtros, ordenação, contagem e paginação ocorrem no backend com RLS; trocar a categoria retorna à primeira página.
+
+Requer `20261012000200_recipe_categories.sql` antes de publicar o frontend. A migração acrescenta a categoria opcional das bases, a categoria efetiva em `recipe_costs` e a consulta paginável `recipe_categories`. Mantém as assinaturas anteriores de `save_recipe`, preservando a categoria ao salvar por clientes antigos. Verificação isolada: `supabase/tests/recipe_categories.sql`.
+
+Aplicada ao Supabase configurado em 12/10/2026 como `recipe_categories`, versão remota `20261012175905`. A conferência posterior confirmou os mesmos cadastros, itens, revisões e custos anteriores, sem divergências entre as categorias das receitas e seus produtos. A publicação do frontend é uma etapa separada.
 
 ## Banco e segurança
 

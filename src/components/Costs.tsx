@@ -20,6 +20,7 @@ import {
   loadRecipeForCopy,
   loadRecipeLines,
   searchMaterials,
+  searchRecipeCategories,
   searchRecipes,
 } from '../services/costs';
 import type {
@@ -31,6 +32,7 @@ import type {
   RecipeOption,
 } from '../services/costs';
 import { searchSaleProducts } from '../services/saleOptions';
+import type { ProductOption } from '../services/saleOptions';
 import { removeRecord } from '../services/management';
 import { SearchSelect } from './SearchSelect';
 import type { SearchOption } from './SearchSelect';
@@ -111,6 +113,8 @@ function CostList({ section }: { section: CostSection }) {
     [ascending, setAscending] = useState(true);
   const [search, setSearch] = useState(''),
     [filter, setFilter] = useState(''),
+    [category, setCategory] = useState<SearchOption | null>(null),
+    [categoryFilter, setCategoryFilter] = useState<string | null>(null),
     [retry, setRetry] = useState(0),
     [rows, setRows] = useState<(Material | Recipe)[]>([]),
     [total, setTotal] = useState(0),
@@ -129,7 +133,7 @@ function CostList({ section }: { section: CostSection }) {
     setRows([]);
     setError('');
     trackRefresh(
-      loadCostRows(section, page, size, filter, sort, ascending, controller.signal)
+      loadCostRows(section, page, size, filter, sort, ascending, controller.signal, categoryFilter)
         .then((r) => {
           if (!active) return;
           if (page > totalPages(r.total, size)) {
@@ -158,7 +162,18 @@ function CostList({ section }: { section: CostSection }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [section, page, size, filter, sort, ascending, retry, refreshVersion, trackRefresh]);
+  }, [
+    section,
+    page,
+    size,
+    filter,
+    categoryFilter,
+    sort,
+    ascending,
+    retry,
+    refreshVersion,
+    trackRefresh,
+  ]);
   function saved() {
     setOpen(false);
     setEditing(null);
@@ -172,6 +187,7 @@ function CostList({ section }: { section: CostSection }) {
       ]
     : [
         ['name', 'Receita'],
+        ['category', 'Categoria'],
         ['total_cents', 'Custo da receita'],
         ['unit_cost_cents', 'Custo por unidade'],
       ];
@@ -202,6 +218,7 @@ function CostList({ section }: { section: CostSection }) {
         onSubmit={(e) => {
           e.preventDefault();
           setFilter(search);
+          setCategoryFilter(category?.id ?? null);
           setPage(1);
         }}
       >
@@ -209,12 +226,27 @@ function CostList({ section }: { section: CostSection }) {
           Buscar por nome
           <input value={search} maxLength={120} onChange={(e) => setSearch(e.target.value)} />
         </label>
+        {!materials && (
+          <SearchSelect
+            label="Filtrar por categoria"
+            value={category}
+            load={searchRecipeCategories}
+            onSelect={(option) => {
+              setCategory(option);
+              setCategoryFilter(option?.id ?? null);
+              setPage(1);
+            }}
+            placeholder="Todas as categorias"
+          />
+        )}
         <button>Filtrar</button>
         <button
           type="button"
           onClick={() => {
             setSearch('');
             setFilter('');
+            setCategory(null);
+            setCategoryFilter(null);
             setPage(1);
           }}
         >
@@ -279,6 +311,7 @@ function CostList({ section }: { section: CostSection }) {
                       </>
                     ) : (
                       <>
+                        <td>{row.category ?? 'Sem categoria'}</td>
                         <td>{money(row.total_cents)}</td>
                         <td>{row.product_id ? money(row.unit_cost_cents) : '—'}</td>
                         <td>
@@ -538,8 +571,13 @@ function RecipeModal({
     request = useRef(crypto.randomUUID()),
     payload = useRef<Record<string, unknown> | null>(null);
   const [name, setName] = useState(recipe?.name ?? ''),
-    [product, setProduct] = useState<SearchOption | null>(
-      recipe?.product_id ? { id: recipe.product_id, label: recipe.product_label } : null,
+    [product, setProduct] = useState<(SearchOption & { category: string | null }) | null>(
+      recipe?.product_id
+        ? { id: recipe.product_id, label: recipe.product_label, category: recipe.category }
+        : null,
+    ),
+    [baseCategory, setBaseCategory] = useState<SearchOption | null>(
+      recipe?.category ? { id: recipe.category, label: recipe.category } : null,
     ),
     [yieldQuantity, setYield] = useState(String(recipe?.yield_quantity ?? 1)),
     [outputQuantity, setOutputQuantity] = useState(
@@ -600,6 +638,11 @@ function RecipeModal({
       if (controller.signal.aborted) throw Error('Cópia interrompida');
       setName(`Cópia de ${copied.recipe.name}`.slice(0, 120));
       setProduct(null);
+      setBaseCategory(
+        copied.recipe.category
+          ? { id: copied.recipe.category, label: copied.recipe.category }
+          : null,
+      );
       setYield(String(copied.recipe.yield_quantity));
       setOutputQuantity(String(copied.recipe.output_quantity).replace('.', ','));
       setOutputUnit(copied.recipe.output_unit);
@@ -626,6 +669,7 @@ function RecipeModal({
     const hasDraft =
       name !== '' ||
       product !== null ||
+      baseCategory !== null ||
       lines.length > 0 ||
       notes !== '' ||
       yieldQuantity !== '1' ||
@@ -703,6 +747,7 @@ function RecipeModal({
           p_request_id: request.current,
           p_name: name.trim(),
           p_product_id: product?.id ?? null,
+          p_category: product ? null : (baseCategory?.id ?? null),
           p_yield_quantity: product ? Number(yieldQuantity) : (recipe?.yield_quantity ?? 1),
           p_output_quantity: parseQuantity(outputQuantity),
           p_output_unit: outputUnit,
@@ -808,8 +853,8 @@ function RecipeModal({
                 Começar copiando outra receita
               </summary>
               <p className="fine">
-                Copia insumos, receitas base, quantidades, rendimentos e observações. Escolha o nome
-                e o produto da nova receita antes de salvar.
+                Copia insumos, receitas base, categoria, quantidades, rendimentos e observações.
+                Escolha o nome e o produto da nova receita antes de salvar.
               </p>
               <SearchSelect
                 label="Receita para copiar"
@@ -927,13 +972,50 @@ function RecipeModal({
               label="Produto da receita (opcional)"
               value={product}
               load={searchSaleProducts}
-              onSelect={setProduct}
+              onSelect={(option) => {
+                if (option) {
+                  setProduct({ ...option, category: (option as ProductOption).product.category });
+                } else {
+                  if (product?.category)
+                    setBaseCategory({ id: product.category, label: product.category });
+                  setProduct(null);
+                }
+              }}
               disabled={busy || uncertain}
               placeholder="Buscar produto"
             />
             <p className="fine">
               Para uma receita usada apenas como base, deixe o produto em branco.
             </p>
+            {product ? (
+              <>
+                <label>
+                  Categoria
+                  <input
+                    value={product.category ?? 'Sem categoria'}
+                    readOnly
+                    aria-describedby="recipe-category-help"
+                  />
+                </label>
+                <p id="recipe-category-help" className="fine">
+                  A categoria acompanha o produto selecionado. Para alterá-la, edite o produto.
+                </p>
+              </>
+            ) : (
+              <>
+                <SearchSelect
+                  label="Categoria (opcional)"
+                  value={baseCategory}
+                  load={searchRecipeCategories}
+                  onSelect={setBaseCategory}
+                  disabled={busy || uncertain || copying || Boolean(pendingCopy)}
+                  placeholder="Escolher categoria"
+                />
+                <p className="fine">
+                  Use uma das categorias do catálogo ou deixe a receita sem categoria.
+                </p>
+              </>
+            )}
             {recipe &&
               !recipe.product_id &&
               recipe.product_label !== 'Receita base' &&

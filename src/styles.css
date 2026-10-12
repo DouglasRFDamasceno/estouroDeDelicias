@@ -3653,6 +3653,13 @@ button.form-close:disabled {
   flex: 1;
   margin: 0;
 }
+.sale-filter > .search-select {
+  flex: 1;
+  margin: 0;
+}
+.sale-filter .search-select label {
+  margin-bottom: 6px;
+}
 .sale-dialog button:disabled,
 .sales-panel button:disabled {
   opacity: 0.5;
@@ -3681,6 +3688,9 @@ button.form-close:disabled {
     flex-wrap: wrap;
   }
   .sale-filter label {
+    flex-basis: 100%;
+  }
+  .sale-filter > .search-select {
     flex-basis: 100%;
   }
   .sales-panel .panel-heading {

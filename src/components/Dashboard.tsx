@@ -15,6 +15,8 @@ import { loadSales } from '../services/sales';
 import type { Sale, SaleSort } from '../services/sales';
 import { Pagination } from './Pagination';
 import { DashboardCharts } from './DashboardCharts';
+import { DashboardProfit } from './DashboardProfit';
+import { DashboardCostIssues } from './DashboardCostIssues';
 const number = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
 export function Dashboard() {
   const { refreshVersion, trackRefresh } = useManagementRefresh();
@@ -269,63 +271,15 @@ export function Dashboard() {
               </div>
               <Link to="/demo/vendas">Consultar vendas ↗</Link>
             </section>
-            <section className="panel dashboard-margin-card">
-              <p className="eyebrow">CUSTOS E COBERTURA</p>
-              <h2>Margem bruta estimada</h2>
-              <strong className="dashboard-margin">
-                {summary.estimated_gross_margin_cents === null
-                  ? 'Cálculo indisponível'
-                  : money(summary.estimated_gross_margin_cents)}
-              </strong>
-              <p>
-                {summary.estimated_gross_margin_cents === null
-                  ? summary.sale_count
-                    ? 'Faltam custos completos para estimar a margem de todas as vendas.'
-                    : 'Registre vendas para acompanhar a margem.'
-                  : 'Valor vendido menos os custos estimados das unidades vendidas.'}
-              </p>
-              <dl className="dashboard-numbers">
-                <div>
-                  <dt>
-                    Custo estimado{' '}
-                    {summary.costed_units !== summary.units
-                      ? '(somente unidades com receita)'
-                      : 'dos itens vendidos'}
-                  </dt>
-                  <dd>
-                    {summary.costed_units
-                      ? money(summary.estimated_cost_cents)
-                      : 'Sem custo disponível'}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Unidades com custo calculável</dt>
-                  <dd>
-                    {number(summary.costed_units)} de {number(summary.units)}
-                  </dd>
-                </div>
-              </dl>
-              {summary.missing_units > 0 && (
-                <p className="dashboard-attention">
-                  {number(summary.missing_units)} unidades sem receita vinculada válida, incluindo
-                  produtos removidos do catálogo.
-                </p>
-              )}
-              {summary.ambiguous_units > 0 && (
-                <p className="dashboard-attention">
-                  {number(summary.ambiguous_units)} unidades pertencem a produtos com várias
-                  receitas. Mantenha uma receita por apresentação para calcular a margem sem
-                  ambiguidade.
-                </p>
-              )}
-              <p className="fine">
-                Estimativa com receitas e preços atuais dos insumos; pode mudar ao editar os custos.
-                Não representa lucro líquido nem saldo em caixa. Despesas operacionais, perdas e mão
-                de obra não possuem valores registrados para este cálculo.
-              </p>
-              <Link to="/demo/custos">Revisar receitas e insumos ↗</Link>
-            </section>
+            <DashboardProfit summary={summary} />
           </div>
+          {(summary.missing_units > 0 || summary.ambiguous_units > 0) && (
+            <DashboardCostIssues
+              key={`${period.from}-${period.until}`}
+              period={period}
+              refreshKey={summary.calculated_at}
+            />
+          )}
           <section className="panel dashboard-directory">
             <div className="dashboard-section-heading">
               <div>

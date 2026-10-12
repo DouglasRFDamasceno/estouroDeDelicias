@@ -152,7 +152,7 @@ export function Demo() {
                           : section === 'clientes'
                             ? 'Cuide de cada cliente e facilite suas próximas vendas.'
                             : section === 'custos'
-                              ? 'Conheça o custo de cada receita, ingrediente por ingrediente.'
+                              ? 'Acompanhe os custos das receitas e as despesas do negócio.'
                               : 'Este endereço não corresponde a uma seção da gestão. Escolha uma opção no menu.'}
                   </p>
                 </div>

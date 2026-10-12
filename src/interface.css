@@ -71,7 +71,7 @@
   font-size: 14px;
   line-height: 1.5;
 }
-.management-shell :is(.sale-filter, .product-filters) input,
+.management-shell :is(.sale-filter, .product-filters) :is(input, select),
 .sale-dialog :is(input, select, textarea),
 .product-form :is(input, select, textarea),
 .search-select .clearable-input {
@@ -332,7 +332,7 @@
   .management-shell .panel {
     border-radius: 16px;
   }
-  .management-shell :is(.sale-filter, .product-filters) input,
+  .management-shell :is(.sale-filter, .product-filters) :is(input, select),
   .sale-dialog :is(input, select, textarea),
   .search-select .clearable-input {
     font-size: 16px;
@@ -615,4 +615,27 @@ button.action-icon-button:disabled {
   margin: 6px 0 0;
   font-weight: 700;
   color: var(--ui-ink);
+}
+
+.dashboard-net-profit {
+  border-top: 1px solid var(--ui-border);
+  margin-top: 24px;
+  padding-top: 20px;
+}
+.dashboard-net-profit h3 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.dashboard-margin-card .dashboard-margin {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.dashboard-margin-card .dashboard-numbers > div {
+  flex-wrap: wrap;
+}
+.dashboard-cost-issues .sale-filter {
+  max-width: 360px;
+}
+.dashboard-cost-issues {
+  scroll-margin-top: 24px;
 }

@@ -35,9 +35,24 @@ import { Pagination } from './Pagination';
 import { ConfirmRemove } from './ConfirmRemove';
 import { RecipeLinesEditor } from './RecipeLinesEditor';
 import { RecipePresentations } from './RecipePresentations';
+import { Expenses } from './Expenses';
+import { useSearchParams } from 'react-router-dom';
+type CostTab = CostSection | 'expenses';
+const costTabs = [
+  ['recipes', 'Receitas e custos'],
+  ['materials', 'Insumos'],
+  ['expenses', 'Despesas'],
+] as const;
 export function Costs() {
   const { identity, identityLoading } = useAuth();
-  const [section, setSection] = useState<CostSection>('recipes');
+  const [params, setParams] = useSearchParams();
+  const section: CostTab =
+    params.get('aba') === 'expenses'
+      ? 'expenses'
+      : params.get('aba') === 'materials'
+        ? 'materials'
+        : 'recipes';
+  const setSection = (next: CostTab) => setParams({ aba: next });
   if (identityLoading) return <p role="status">Carregando acesso…</p>;
   if (!identity?.isAdmin)
     return (
@@ -48,12 +63,7 @@ export function Costs() {
   return (
     <>
       <div className="cost-tabs" role="tablist" aria-label="Cadastros de custos">
-        {(
-          [
-            ['recipes', 'Receitas e custos'],
-            ['materials', 'Insumos'],
-          ] as const
-        ).map(([key, label]) => (
+        {costTabs.map(([key, label], index) => (
           <button
             key={key}
             id={`cost-tab-${key}`}
@@ -64,13 +74,14 @@ export function Costs() {
             tabIndex={section === key ? 0 : -1}
             onClick={() => setSection(key)}
             onKeyDown={(event) => {
-              let next: CostSection;
+              let next: CostTab;
               if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-                next = key === 'materials' ? 'recipes' : 'materials';
+                next =
+                  costTabs[(index + (event.key === 'ArrowRight' ? 1 : 2)) % costTabs.length][0];
               } else if (event.key === 'Home') {
                 next = 'recipes';
               } else if (event.key === 'End') {
-                next = 'materials';
+                next = 'expenses';
               } else {
                 return;
               }
@@ -83,11 +94,13 @@ export function Costs() {
           </button>
         ))}
       </div>
-      <p className="fine">
-        Cadastre a compra de referência do insumo e depois a quantidade usada na receita. Exemplo: 1
-        kg de chocolate por R$ 30,00 → 200 g custam R$ 6,00.
-      </p>
-      {(['recipes', 'materials'] as const).map((key) => (
+      {section !== 'expenses' && (
+        <p className="fine">
+          Cadastre a compra de referência do insumo e depois a quantidade usada na receita. Exemplo:
+          1 kg de chocolate por R$ 30,00 → 200 g custam R$ 6,00.
+        </p>
+      )}
+      {costTabs.map(([key]) => (
         <div
           key={key}
           id={`cost-panel-${key}`}
@@ -96,7 +109,7 @@ export function Costs() {
           hidden={section !== key}
           tabIndex={0}
         >
-          {section === key && <CostList section={key} />}
+          {section === key && (key === 'expenses' ? <Expenses /> : <CostList section={key} />)}
         </div>
       ))}
     </>

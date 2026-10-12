@@ -16,6 +16,14 @@ export interface DashboardSummary {
   ambiguous_units: number;
   estimated_cost_cents: number;
   estimated_gross_margin_cents: number | null;
+  estimated_gross_profit_cents: number | null;
+  estimated_gross_margin_percent: number | null;
+  expense_count: number;
+  expense_cents: number;
+  estimated_net_profit_cents: number | null;
+  estimated_net_margin_percent: number | null;
+  costed_revenue_cents: number;
+  uncovered_revenue_cents: number;
   all_receivable_cents: number;
   all_pending_count: number;
   product_count: number;
@@ -86,4 +94,47 @@ export async function loadDashboardDays(
     .abortSignal(signal);
   if (result.error || !result.data) throw result.error ?? Error('Série indisponível');
   return result.data as DashboardDay[];
+}
+
+export const costIssueLabels = {
+  no_recipe: 'Sem receita vinculada',
+  multiple_recipes: 'Mais de uma receita vinculada',
+  removed_product: 'Produto removido do catálogo',
+  empty_recipe: 'Receita sem ingredientes',
+} as const;
+export type CostIssueReason = keyof typeof costIssueLabels;
+export interface DashboardCostIssue extends DashboardProduct {
+  product_id: string | null;
+  reason: CostIssueReason;
+}
+export async function loadDashboardCostIssues(
+  from: string,
+  until: string,
+  page: number,
+  size: number,
+  sort: DashboardProductSort,
+  ascending: boolean,
+  reason: CostIssueReason | 'all',
+  signal: AbortSignal,
+): Promise<{ rows: DashboardCostIssue[]; total: number }> {
+  validateDashboardPeriod(from, until);
+  pageRange(page, size);
+  if (
+    !['name', 'quantity', 'revenue_cents'].includes(sort) ||
+    (reason !== 'all' && !(reason in costIssueLabels))
+  )
+    throw Error('Consulta inválida.');
+  const result = await requireSupabase()
+    .rpc('dashboard_cost_issues', {
+      p_from: from,
+      p_until: until,
+      p_page: page,
+      p_size: size,
+      p_sort: sort,
+      p_ascending: ascending,
+      p_reason: reason,
+    })
+    .abortSignal(signal);
+  if (result.error || !result.data) throw result.error ?? Error('Pendências indisponíveis');
+  return result.data;
 }

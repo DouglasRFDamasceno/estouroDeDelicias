@@ -1,9 +1,11 @@
 # Insumos e receitas
 
-Em **Custos e despesas**, há dois cadastros reais:
+Em **Custos e despesas**, há três cadastros reais:
 
 1. **Insumos**: nome, categoria opcional de texto, quantidade comprada, unidade e preço total dessa quantidade. Exemplo: Chocolate, 1 kg, R$ 30,00. Embalagens também podem ser insumos: 100 unidades por R$ 20,00.
 2. **Receitas e custos**: nome, categoria, rendimento da preparação (g/kg, ml/l ou un), quantidades usadas de cada insumo ou receita base e apresentações opcionais do catálogo. No cálculo por peso, uma receita atende a vários produtos; as embalagens são configuradas por pacote. O modo anterior por unidades de venda continua disponível. As buscas por produtos, categorias, insumos e receitas são paginadas no backend.
+
+3. **Despesas**: descrição, categoria opcional, data, valor e observações. Gastos do negócio são descontados do lucro bruto no período correspondente, sem repetir os ingredientes e embalagens das receitas. Veja [indicadores e despesas](dashboard.md).
 
 ## Uma receita para 50, 100 e 150 g
 

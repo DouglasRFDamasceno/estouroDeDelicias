@@ -3575,7 +3575,7 @@ button.form-close:disabled {
 .sale-dialog input,
 .sale-dialog select,
 .sale-dialog textarea,
-.sale-filter input {
+.sale-filter :is(input, select) {
   box-sizing: border-box;
   width: 100%;
   border: 1px solid #e8d3e4;

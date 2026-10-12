@@ -1,3 +1,4 @@
+import { useManagementRefresh } from './ManagementRefresh';
 import { useEffect, useId, useState } from 'react';
 import { dateBR, money } from '../domain/format';
 import { loadDashboardDays, loadDashboardProducts } from '../services/dashboard';
@@ -10,6 +11,7 @@ export function DashboardCharts({
   period: { from: string; until: string };
   summary: DashboardSummary;
 }) {
+  const { refreshVersion, trackRefresh } = useManagementRefresh();
   const gradientId = useId();
   const [selectedDate, setSelectedDate] = useState('');
   const [days, setDays] = useState<DashboardDay[] | null>(null);
@@ -25,28 +27,38 @@ export function DashboardCharts({
     setProducts(null);
     setDayError(false);
     setProductError(false);
-    void Promise.allSettled([
-      loadDashboardDays(period.from, period.until, controller.signal)
-        .then((rows) => {
-          if (active) setDays(rows);
-        })
-        .catch(() => {
-          if (active) setDayError(true);
-        }),
-      loadDashboardProducts(period.from, period.until, 1, 10, 'quantity', false, controller.signal)
-        .then(({ rows }) => {
-          if (active) setProducts(rows.slice(0, 5));
-        })
-        .catch(() => {
-          if (active) setProductError(true);
-        }),
-    ]).finally(() => clearTimeout(timeout));
+    trackRefresh(
+      Promise.allSettled([
+        loadDashboardDays(period.from, period.until, controller.signal)
+          .then((rows) => {
+            if (active) setDays(rows);
+          })
+          .catch(() => {
+            if (active) setDayError(true);
+          }),
+        loadDashboardProducts(
+          period.from,
+          period.until,
+          1,
+          10,
+          'quantity',
+          false,
+          controller.signal,
+        )
+          .then(({ rows }) => {
+            if (active) setProducts(rows.slice(0, 5));
+          })
+          .catch(() => {
+            if (active) setProductError(true);
+          }),
+      ]).finally(() => clearTimeout(timeout)),
+    );
     return () => {
       active = false;
       controller.abort();
       clearTimeout(timeout);
     };
-  }, [period.from, period.until, summary.calculated_at, retry]);
+  }, [period.from, period.until, summary.calculated_at, retry, refreshVersion, trackRefresh]);
   const receivedPercent = summary.revenue_cents
     ? (summary.received_cents / summary.revenue_cents) * 100
     : 0;

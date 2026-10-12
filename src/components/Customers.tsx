@@ -1,3 +1,4 @@
+import { useManagementRefresh } from './ManagementRefresh';
 import { ActionIconButton } from './ActionIconButton';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -18,6 +19,7 @@ const labels = { name: 'Nome', created_at: 'Cadastrado em' };
 const date = (value: string) =>
   new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(value));
 export function Customers() {
+  const { refreshVersion, trackRefresh } = useManagementRefresh();
   const { identity, identityLoading } = useAuth();
   const [page, setPage] = useState(1),
     [pageSize, setPageSize] = useState(10),
@@ -43,35 +45,47 @@ export function Customers() {
     setLoading(true);
     setError('');
     setRows([]);
-    loadCustomers({ page, pageSize, sort, ascending, filters, signal: controller.signal })
-      .then((result) => {
-        if (!active) return;
-        if (page > totalPages(result.total, pageSize)) {
-          setPage(totalPages(result.total, pageSize));
-          return;
-        }
-        setRows(result.rows);
-        setTotal(result.total);
-      })
-      .catch((issue) => {
-        if (active) {
-          if (issue?.code === 'PGRST103' && page > 1) {
-            setPage(1);
+    trackRefresh(
+      loadCustomers({ page, pageSize, sort, ascending, filters, signal: controller.signal })
+        .then((result) => {
+          if (!active) return;
+          if (page > totalPages(result.total, pageSize)) {
+            setPage(totalPages(result.total, pageSize));
             return;
           }
-          setError('Não foi possível carregar os clientes. Confira a conexão e tente novamente.');
-        }
-      })
-      .finally(() => {
-        clearTimeout(timer);
-        if (active) setLoading(false);
-      });
+          setRows(result.rows);
+          setTotal(result.total);
+        })
+        .catch((issue) => {
+          if (active) {
+            if (issue?.code === 'PGRST103' && page > 1) {
+              setPage(1);
+              return;
+            }
+            setError('Não foi possível carregar os clientes. Confira a conexão e tente novamente.');
+          }
+        })
+        .finally(() => {
+          clearTimeout(timer);
+          if (active) setLoading(false);
+        }),
+    );
     return () => {
       active = false;
       controller.abort();
       clearTimeout(timer);
     };
-  }, [identity?.isAdmin, page, pageSize, sort, ascending, filters, revision]);
+  }, [
+    identity?.isAdmin,
+    page,
+    pageSize,
+    sort,
+    ascending,
+    filters,
+    revision,
+    refreshVersion,
+    trackRefresh,
+  ]);
   function apply(event: FormEvent) {
     event.preventDefault();
     setFilterError('');

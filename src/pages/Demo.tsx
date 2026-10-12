@@ -23,6 +23,7 @@ import { Customers } from '../components/Customers';
 import { Sales } from '../components/Sales';
 import { Products } from '../components/Products';
 import { LogoutButton } from '../components/LogoutButton';
+import { ManagementRefresh } from '../components/ManagementRefresh';
 const sections = [
   ['dashboard', 'Visão geral', '◫'],
   ['produtos', 'Produtos', '◇'],
@@ -131,7 +132,7 @@ export function Demo() {
               </div>
             </IonToolbar>
           </IonHeader>
-          <IonContent>
+          <ManagementRefresh>
             <div className="demo-content">
               <div className="page-heading">
                 <div>
@@ -174,7 +175,7 @@ export function Demo() {
               )}
               <p className="demo-footer">Gestão integrada · Conexão com a internet necessária</p>
             </div>
-          </IonContent>
+          </ManagementRefresh>
         </div>
       </IonSplitPane>
     </IonPage>

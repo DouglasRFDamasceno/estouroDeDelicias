@@ -1,3 +1,4 @@
+import { useManagementRefresh } from './ManagementRefresh';
 import { ActionIconButton } from './ActionIconButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -103,6 +104,7 @@ export function Costs() {
   );
 }
 function CostList({ section }: { section: CostSection }) {
+  const { refreshVersion, trackRefresh } = useManagementRefresh();
   const [page, setPage] = useState(1),
     [size, setSize] = useState(10),
     [sort, setSort] = useState('name'),
@@ -126,35 +128,37 @@ function CostList({ section }: { section: CostSection }) {
     setLoading(true);
     setRows([]);
     setError('');
-    loadCostRows(section, page, size, filter, sort, ascending, controller.signal)
-      .then((r) => {
-        if (!active) return;
-        if (page > totalPages(r.total, size)) {
-          setPage(totalPages(r.total, size));
-          return;
-        }
-        setRows(r.rows);
-        setTotal(r.total);
-      })
-      .catch((e) => {
-        if (active) {
-          if (e?.code === 'PGRST103' && page > 1) {
-            setPage(1);
+    trackRefresh(
+      loadCostRows(section, page, size, filter, sort, ascending, controller.signal)
+        .then((r) => {
+          if (!active) return;
+          if (page > totalPages(r.total, size)) {
+            setPage(totalPages(r.total, size));
             return;
           }
-          setError('Não foi possível carregar os cadastros. Confira a conexão.');
-        }
-      })
-      .finally(() => {
-        clearTimeout(timer);
-        if (active) setLoading(false);
-      });
+          setRows(r.rows);
+          setTotal(r.total);
+        })
+        .catch((e) => {
+          if (active) {
+            if (e?.code === 'PGRST103' && page > 1) {
+              setPage(1);
+              return;
+            }
+            setError('Não foi possível carregar os cadastros. Confira a conexão.');
+          }
+        })
+        .finally(() => {
+          clearTimeout(timer);
+          if (active) setLoading(false);
+        }),
+    );
     return () => {
       active = false;
       clearTimeout(timer);
       controller.abort();
     };
-  }, [section, page, size, filter, sort, ascending, retry]);
+  }, [section, page, size, filter, sort, ascending, retry, refreshVersion, trackRefresh]);
   function saved() {
     setOpen(false);
     setEditing(null);

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useManagementRefresh } from './ManagementRefresh';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { dashboardPeriod, validateDashboardPeriod } from '../domain/dashboard';
@@ -16,12 +17,15 @@ import { Pagination } from './Pagination';
 import { DashboardCharts } from './DashboardCharts';
 const number = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
 export function Dashboard() {
+  const { refreshVersion, trackRefresh } = useManagementRefresh();
   const { identity, identityLoading } = useAuth();
   const [tableTab, setTableTab] = useState<'sales' | 'products'>('sales');
   const [period, setPeriod] = useState(dashboardPeriod),
     [draft, setDraft] = useState(dashboardPeriod),
     [periodError, setPeriodError] = useState('');
+  const queriedPeriod = useRef(period);
   const [summary, setSummary] = useState<DashboardSummary | null>(null),
+    [refreshing, setRefreshing] = useState(false),
     [error, setError] = useState(''),
     [revision, setRevision] = useState(0);
   useEffect(() => {
@@ -29,25 +33,32 @@ export function Dashboard() {
     let active = true;
     const c = new AbortController();
     const timer = setTimeout(() => c.abort(), 20000);
-    setSummary(null);
+    if (queriedPeriod.current !== period) setSummary(null);
+    queriedPeriod.current = period;
+    setRefreshing(true);
     setError('');
-    loadDashboard(period.from, period.until, c.signal)
-      .then((data) => {
-        if (active) setSummary(data);
-      })
-      .catch(() => {
-        if (active)
-          setError(
-            'Não foi possível consultar os indicadores. Confira sua conexão e permissão e tente novamente.',
-          );
-      })
-      .finally(() => clearTimeout(timer));
+    trackRefresh(
+      loadDashboard(period.from, period.until, c.signal)
+        .then((data) => {
+          if (active) setSummary(data);
+        })
+        .catch(() => {
+          if (active)
+            setError(
+              'Não foi possível consultar os indicadores. Confira sua conexão e permissão e tente novamente.',
+            );
+        })
+        .finally(() => {
+          clearTimeout(timer);
+          if (active) setRefreshing(false);
+        }),
+    );
     return () => {
       active = false;
       c.abort();
       clearTimeout(timer);
     };
-  }, [identity?.isAdmin, period, revision]);
+  }, [identity?.isAdmin, period, revision, refreshVersion, trackRefresh]);
   useEffect(() => {
     const refresh = () => setRevision((v) => v + 1);
     window.addEventListener('focus', refresh);
@@ -63,6 +74,7 @@ export function Dashboard() {
     );
   return (
     <div className="real-dashboard">
+      {refreshing && summary && <p role="status">Atualizando indicadores…</p>}
       <section className="dashboard-intro" aria-labelledby="dashboard-intro-title">
         <div>
           <span className="dashboard-overline">CADA ESTOURO CONTA</span>
@@ -406,6 +418,7 @@ function DashboardTable({
   period: { from: string; until: string };
 }) {
   const sales = kind === 'sales';
+  const { refreshVersion, trackRefresh } = useManagementRefresh();
   const [page, setPage] = useState(1),
     [size, setSize] = useState(10),
     [sort, setSort] = useState(sales ? 'sale_date' : 'revenue_cents'),
@@ -433,35 +446,37 @@ function DashboardTable({
           ascending,
           c.signal,
         );
-    request
-      .then((r) => {
-        if (!active) return;
-        if (page > totalPages(r.total, size)) {
-          setPage(totalPages(r.total, size));
-          return;
-        }
-        setRows(r.rows);
-        setTotal(r.total);
-      })
-      .catch((issue) => {
-        if (active) {
-          if (issue?.code === 'PGRST103' && page > 1) {
-            setPage(1);
+    trackRefresh(
+      request
+        .then((r) => {
+          if (!active) return;
+          if (page > totalPages(r.total, size)) {
+            setPage(totalPages(r.total, size));
             return;
           }
-          setError('Não foi possível carregar esta tabela.');
-        }
-      })
-      .finally(() => {
-        clearTimeout(timer);
-        if (active) setLoading(false);
-      });
+          setRows(r.rows);
+          setTotal(r.total);
+        })
+        .catch((issue) => {
+          if (active) {
+            if (issue?.code === 'PGRST103' && page > 1) {
+              setPage(1);
+              return;
+            }
+            setError('Não foi possível carregar esta tabela.');
+          }
+        })
+        .finally(() => {
+          clearTimeout(timer);
+          if (active) setLoading(false);
+        }),
+    );
     return () => {
       active = false;
       c.abort();
       clearTimeout(timer);
     };
-  }, [sales, period, page, size, sort, ascending, revision]);
+  }, [sales, period, page, size, sort, ascending, revision, refreshVersion, trackRefresh]);
   const columns = sales
     ? [
         ['sale_date', 'Data'],

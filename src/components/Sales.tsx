@@ -1,3 +1,4 @@
+import { useManagementRefresh } from './ManagementRefresh';
 import { ActionIconButton } from './ActionIconButton';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -32,6 +33,7 @@ const methods: Record<string, string> = {
   other: 'Outro',
 };
 export function Sales() {
+  const { refreshVersion, trackRefresh } = useManagementRefresh();
   const { identity, identityLoading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const onSalesPage = useLocation().pathname === '/demo/vendas';
@@ -76,35 +78,48 @@ export function Sales() {
     setLoading(true);
     setError('');
     setRows([]);
-    loadSales(page, size, filter, sort, ascending, controller.signal)
-      .then((result) => {
-        if (active) {
-          if (page > totalPages(result.total, size)) {
-            setPage(totalPages(result.total, size));
-            return;
+    trackRefresh(
+      loadSales(page, size, filter, sort, ascending, controller.signal)
+        .then((result) => {
+          if (active) {
+            if (page > totalPages(result.total, size)) {
+              setPage(totalPages(result.total, size));
+              return;
+            }
+            setRows(result.rows);
+            setTotal(result.total);
           }
-          setRows(result.rows);
-          setTotal(result.total);
-        }
-      })
-      .catch((issue) => {
-        if (active) {
-          if (issue?.code === 'PGRST103' && page > 1) {
-            setPage(1);
-            return;
+        })
+        .catch((issue) => {
+          if (active) {
+            if (issue?.code === 'PGRST103' && page > 1) {
+              setPage(1);
+              return;
+            }
+            setError('Não foi possível carregar as vendas. Tente novamente.');
           }
-          setError('Não foi possível carregar as vendas. Tente novamente.');
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        }),
+    );
     return () => {
       active = false;
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [identity?.isAdmin, page, size, filter, sort, ascending, revision, onSalesPage]);
+  }, [
+    identity?.isAdmin,
+    page,
+    size,
+    filter,
+    sort,
+    ascending,
+    revision,
+    onSalesPage,
+    refreshVersion,
+    trackRefresh,
+  ]);
   if (identityLoading) return <p role="status">Carregando acesso…</p>;
   if (!identity?.isAdmin)
     return (

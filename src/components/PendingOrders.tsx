@@ -1,3 +1,4 @@
+import { useManagementRefresh } from './ManagementRefresh';
 import { useEffect, useState } from 'react';
 import {
   loadPendingOrders,
@@ -18,6 +19,7 @@ export function PendingOrders({
   onReview: (order: PendingOrder, items: (CatalogProduct & { quantity: number })[]) => void;
 }) {
   const [size, setSize] = useState(10);
+  const { refreshVersion, trackRefresh } = useManagementRefresh();
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(''),
     [filter, setFilter] = useState('');
@@ -35,33 +37,35 @@ export function PendingOrders({
     setLoading(true);
     setError('');
     setRows([]);
-    loadPendingOrders(page, size, filter, controller.signal)
-      .then((result) => {
-        if (!active) return;
-        if (page > totalPages(result.total, size)) {
-          setPage(totalPages(result.total, size));
-          return;
-        }
-        setRows(result.rows);
-        setTotal(result.total);
-      })
-      .catch((issue) => {
-        if (!active) return;
-        if (issue?.code === 'PGRST103' && page > 1) {
-          setPage(1);
-          return;
-        }
-        setError('Não foi possível carregar os pedidos recebidos.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    trackRefresh(
+      loadPendingOrders(page, size, filter, controller.signal)
+        .then((result) => {
+          if (!active) return;
+          if (page > totalPages(result.total, size)) {
+            setPage(totalPages(result.total, size));
+            return;
+          }
+          setRows(result.rows);
+          setTotal(result.total);
+        })
+        .catch((issue) => {
+          if (!active) return;
+          if (issue?.code === 'PGRST103' && page > 1) {
+            setPage(1);
+            return;
+          }
+          setError('Não foi possível carregar os pedidos recebidos.');
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        }),
+    );
     return () => {
       active = false;
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [page, size, filter, revision, refresh]);
+  }, [page, size, filter, revision, refresh, refreshVersion, trackRefresh]);
   async function review(order: PendingOrder) {
     if (busy) return;
     setBusy(true);

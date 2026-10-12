@@ -1,3 +1,4 @@
+import { useManagementRefresh } from './ManagementRefresh';
 import { ActionIconButton } from './ActionIconButton';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -22,6 +23,7 @@ const columnLabels = {
   price_cents: 'Preço',
 };
 export function Products() {
+  const { refreshVersion, trackRefresh } = useManagementRefresh();
   const { session, loading: authLoading, identity } = useAuth();
   const userId = session?.user.id;
   const onProductsPage = useLocation().pathname === '/demo/produtos';
@@ -92,48 +94,61 @@ export function Products() {
       setLoading(false);
       return;
     }
-    void (async () => {
-      try {
-        const result = await loadProducts({
-          page,
-          pageSize,
-          sort: sort.column,
-          ascending: sort.ascending,
-          filters,
-          signal: controller.signal,
-        });
-        if (active) {
-          const lastPage = totalPages(result.total, pageSize);
-          if (page > lastPage) {
-            setPage(lastPage);
-            return;
+    trackRefresh(
+      (async () => {
+        try {
+          const result = await loadProducts({
+            page,
+            pageSize,
+            sort: sort.column,
+            ascending: sort.ascending,
+            filters,
+            signal: controller.signal,
+          });
+          if (active) {
+            const lastPage = totalPages(result.total, pageSize);
+            if (page > lastPage) {
+              setPage(lastPage);
+              return;
+            }
+            setCatalog({ owner: userId, ...result });
           }
-          setCatalog({ owner: userId, ...result });
-        }
-      } catch (issue) {
-        if (active) {
-          const code = issue && typeof issue === 'object' && 'code' in issue ? issue.code : '';
-          if (code === 'PGRST103' && page > 1) {
-            setPage(1);
-            return;
+        } catch (issue) {
+          if (active) {
+            const code = issue && typeof issue === 'object' && 'code' in issue ? issue.code : '';
+            if (code === 'PGRST103' && page > 1) {
+              setPage(1);
+              return;
+            }
+            setError(
+              code === '42501'
+                ? 'Sua conta não tem permissão para consultar o catálogo.'
+                : 'Não foi possível carregar o catálogo. Confira a conexão e tente novamente.',
+            );
           }
-          setError(
-            code === '42501'
-              ? 'Sua conta não tem permissão para consultar o catálogo.'
-              : 'Não foi possível carregar o catálogo. Confira a conexão e tente novamente.',
-          );
+        } finally {
+          window.clearTimeout(timeout);
+          if (active) setLoading(false);
         }
-      } finally {
-        window.clearTimeout(timeout);
-        if (active) setLoading(false);
-      }
-    })();
+      })(),
+    );
     return () => {
       active = false;
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [userId, retry, page, pageSize, sort, filters, setPage, onProductsPage]);
+  }, [
+    userId,
+    retry,
+    page,
+    pageSize,
+    sort,
+    filters,
+    setPage,
+    onProductsPage,
+    refreshVersion,
+    trackRefresh,
+  ]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving.current || !canManage || !userId) return;

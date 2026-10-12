@@ -1,5 +1,6 @@
 import { useManagementRefresh } from './ManagementRefresh';
 import { ActionIconButton } from './ActionIconButton';
+import { ClearableInput } from './ClearableInput';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { readProductQuery } from '../domain/productQuery';
@@ -274,13 +275,17 @@ export function Products() {
             {(['name', 'category', 'presentation'] as const).map((key) => (
               <label key={key}>
                 {columnLabels[key]}
-                <input
+                <ClearableInput
+                  label={columnLabels[key]}
                   value={draftFilters[key]}
                   maxLength={120}
                   onChange={(event) =>
                     setDraftFilters((previous) => ({ ...previous, [key]: event.target.value }))
                   }
                   placeholder={`Buscar ${columnLabels[key].toLowerCase()}`}
+                  onClear={() => {
+                    setDraftFilters((previous) => ({ ...previous, [key]: '' }));
+                  }}
                 />
               </label>
             ))}

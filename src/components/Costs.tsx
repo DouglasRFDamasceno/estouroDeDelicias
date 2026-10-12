@@ -1,5 +1,6 @@
 import { useManagementRefresh } from './ManagementRefresh';
 import { ActionIconButton } from './ActionIconButton';
+import { ClearableInput } from './ClearableInput';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthProvider';
@@ -224,11 +225,20 @@ function CostList({ section }: { section: CostSection }) {
       >
         <label>
           Buscar por nome
-          <input value={search} maxLength={120} onChange={(e) => setSearch(e.target.value)} />
+          <ClearableInput
+            label="Buscar por nome"
+            value={search}
+            maxLength={120}
+            onChange={(e) => setSearch(e.target.value)}
+            onClear={() => {
+              setSearch('');
+            }}
+          />
         </label>
         {!materials && (
           <SearchSelect
             label="Filtrar por categoria"
+            showHint={false}
             value={category}
             load={searchRecipeCategories}
             onSelect={(option) => {

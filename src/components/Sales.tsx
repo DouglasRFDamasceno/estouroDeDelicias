@@ -1,5 +1,6 @@
 import { useManagementRefresh } from './ManagementRefresh';
 import { ActionIconButton } from './ActionIconButton';
+import { ClearableInput } from './ClearableInput';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
@@ -217,11 +218,15 @@ export function Sales() {
         >
           <label>
             Cliente
-            <input
+            <ClearableInput
+              label="Cliente"
               value={search}
               maxLength={120}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome"
+              onClear={() => {
+                setSearch('');
+              }}
             />
           </label>
           <button>Filtrar</button>

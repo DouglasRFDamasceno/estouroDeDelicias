@@ -63,7 +63,7 @@
 .landing-search {
   display: block;
 }
-.landing-search > span {
+.landing-search > span:not(.clearable-field) {
   display: block;
   font-size: 12px;
   font-weight: 700;

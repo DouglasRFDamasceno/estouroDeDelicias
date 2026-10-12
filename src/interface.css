@@ -74,7 +74,7 @@
 .management-shell :is(.sale-filter, .product-filters) input,
 .sale-dialog :is(input, select, textarea),
 .product-form :is(input, select, textarea),
-.search-select-input input {
+.search-select .clearable-input {
   min-height: 44px;
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius);
@@ -90,7 +90,7 @@
 }
 .management-shell input:focus-visible,
 .sale-dialog :is(input, select, textarea):focus-visible,
-.search-select-input input:focus-visible {
+.search-select .clearable-input:focus-visible {
   border-color: var(--ui-brand);
   box-shadow: var(--ui-focus);
 }
@@ -334,7 +334,7 @@
   }
   .management-shell :is(.sale-filter, .product-filters) input,
   .sale-dialog :is(input, select, textarea),
-  .search-select-input input {
+  .search-select .clearable-input {
     font-size: 16px;
   }
   .sale-dialog {
@@ -505,4 +505,53 @@ button.action-icon-button:disabled {
   .management-section-menu-label {
     font-size: 12px;
   }
+}
+
+/* Limpeza dentro do campo, com espaço para textos longos e foco pelo teclado. */
+.clearable-field {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+.clearable-field > input.clearable-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding-inline-end: 48px;
+  line-height: 1.5;
+}
+.clearable-field > input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+.clearable-field > button.field-clear {
+  position: absolute;
+  inset-block: 1px;
+  inset-inline-end: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--ui-radius) - 2px);
+  background: transparent;
+  color: var(--ui-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.clearable-field > button.field-clear:hover:not(:disabled) {
+  background: var(--ui-soft);
+  color: var(--ui-brand-strong);
+}
+.clearable-field > button.field-clear:focus-visible {
+  outline: 2px solid var(--ui-brand);
+  outline-offset: -3px;
+}
+.clearable-field > button.field-clear:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

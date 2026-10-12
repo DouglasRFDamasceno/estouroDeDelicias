@@ -1,4 +1,5 @@
 import { useManagementRefresh } from './ManagementRefresh';
+import { ClearableInput } from './ClearableInput';
 import { useEffect, useState } from 'react';
 import {
   loadPendingOrders,
@@ -120,11 +121,16 @@ export function PendingOrders({
       >
         <label>
           Cliente ou número do pedido
-          <input
+          <ClearableInput
+            label="Cliente ou número do pedido"
             maxLength={120}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Nome ou #1042"
+            disabled={busy}
+            onClear={() => {
+              setSearch('');
+            }}
           />
         </label>
         <button disabled={loading || busy}>Buscar pedido</button>

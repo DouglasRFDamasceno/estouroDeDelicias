@@ -1,5 +1,6 @@
 import { useManagementRefresh } from './ManagementRefresh';
 import { ActionIconButton } from './ActionIconButton';
+import { ClearableInput } from './ClearableInput';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthProvider';
@@ -127,11 +128,15 @@ export function Customers() {
           <div>
             <label>
               Nome
-              <input
+              <ClearableInput
+                label="Nome"
                 maxLength={120}
                 value={draft.name}
                 placeholder="Buscar por nome"
                 onChange={(e) => setDraft((v) => ({ ...v, name: e.target.value }))}
+                onClear={() => {
+                  setDraft((v) => ({ ...v, name: '' }));
+                }}
               />
             </label>
             <label>

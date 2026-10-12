@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { FieldClearButton } from './ClearableInput';
 export interface SearchOption {
   id: string;
   label: string;
@@ -9,6 +10,7 @@ interface Props {
   value: SearchOption | null;
   placeholder?: string;
   disabled?: boolean;
+  showHint?: boolean;
   load: (
     search: string,
     page: number,
@@ -22,6 +24,7 @@ export function SearchSelect({
   value,
   placeholder,
   disabled,
+  showHint = true,
   load,
   onSelect,
   onCreate,
@@ -106,9 +109,10 @@ export function SearchSelect({
       }}
     >
       <label htmlFor={id}>{label}</label>
-      <div className="search-select-input">
+      <div className="clearable-field">
         <input
           id={id}
+          className="clearable-input"
           ref={input}
           role="combobox"
           autoComplete="off"
@@ -164,21 +168,19 @@ export function SearchSelect({
             }
           }}
         />
-        {value && (
-          <button
-            type="button"
-            aria-label={`Limpar ${label}`}
+        {(value || (open && search)) && (
+          <FieldClearButton
+            label={label}
             disabled={disabled || creating}
-            onClick={() => {
-              onSelect(null);
+            onClear={() => {
+              if (value) onSelect(null);
+              input.current?.focus();
               close();
             }}
-          >
-            ×
-          </button>
+          />
         )}
       </div>
-      <small id={`${id}-hint`}>
+      <small id={`${id}-hint`} className={showHint ? undefined : 'sr-only'}>
         {value ? `Selecionado: ${value.label}` : 'Digite para buscar e selecione uma opção.'}
       </small>
       {open && !disabled && (

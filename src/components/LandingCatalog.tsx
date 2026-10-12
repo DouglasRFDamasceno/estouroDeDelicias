@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { ClearableInput } from './ClearableInput';
 import { IonButtons, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from '@ionic/react';
 import {
   landingFlavors,
@@ -135,12 +136,14 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
         <div className="landing-catalog-tools">
           <label className="landing-search">
             <span>Encontre seu sabor</span>
-            <input
+            <ClearableInput
+              label="Encontre seu sabor"
               type="search"
               placeholder="Experimente “Ninho” ou “Limão”"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               maxLength={120}
+              onClear={() => setSearch('')}
             />
           </label>
           <div className="landing-catalog-filters">

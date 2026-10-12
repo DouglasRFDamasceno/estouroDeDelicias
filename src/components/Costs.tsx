@@ -38,7 +38,7 @@ import { Pagination } from './Pagination';
 import { ConfirmRemove } from './ConfirmRemove';
 export function Costs() {
   const { identity, identityLoading } = useAuth();
-  const [section, setSection] = useState<CostSection>('materials');
+  const [section, setSection] = useState<CostSection>('recipes');
   if (identityLoading) return <p role="status">Carregando acesso…</p>;
   if (!identity?.isAdmin)
     return (
@@ -51,8 +51,8 @@ export function Costs() {
       <div className="cost-tabs" role="tablist" aria-label="Cadastros de custos">
         {(
           [
-            ['materials', 'Insumos'],
             ['recipes', 'Receitas e custos'],
+            ['materials', 'Insumos'],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -69,9 +69,9 @@ export function Costs() {
               if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
                 next = key === 'materials' ? 'recipes' : 'materials';
               } else if (event.key === 'Home') {
-                next = 'materials';
-              } else if (event.key === 'End') {
                 next = 'recipes';
+              } else if (event.key === 'End') {
+                next = 'materials';
               } else {
                 return;
               }
@@ -88,7 +88,7 @@ export function Costs() {
         Cadastre a compra de referência do insumo e depois a quantidade usada na receita. Exemplo: 1
         kg de chocolate por R$ 30,00 → 200 g custam R$ 6,00.
       </p>
-      {(['materials', 'recipes'] as const).map((key) => (
+      {(['recipes', 'materials'] as const).map((key) => (
         <div
           key={key}
           id={`cost-panel-${key}`}

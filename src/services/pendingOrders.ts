@@ -1,3 +1,4 @@
+import { searchPattern } from '../domain/search';
 import { requireSupabase } from './supabase';
 import { pageRange } from '../domain/pagination';
 import type { CatalogProduct } from '../domain/catalog';
@@ -33,7 +34,7 @@ export async function loadPendingOrders(
   if (filter.trim()) {
     if (/^#?\d+$/.test(filter.trim()))
       query = query.eq('reference', filter.trim().replace('#', ''));
-    else query = query.ilike('customer', `%${filter.trim().replace(/[\\%_]/g, '\\$&')}%`);
+    else query = query.ilike('customer_search', searchPattern(filter));
   }
   const result = await query
     .order('created_at', { ascending: false })

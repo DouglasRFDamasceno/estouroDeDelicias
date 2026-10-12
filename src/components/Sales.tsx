@@ -34,7 +34,7 @@ export function Sales() {
   const { identity, identityLoading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const onSalesPage = useLocation().pathname === '/demo/vendas';
-  const tab = searchParams.get('aba') === 'vendas' ? 'sales' : 'orders';
+  const tab = searchParams.get('aba') === 'pedidos' ? 'orders' : 'sales';
   function setTab(value: 'orders' | 'sales') {
     setSearchParams((previous) => {
       const next = new URLSearchParams(previous);
@@ -116,8 +116,8 @@ export function Sales() {
       <div className="sales-tabs" role="tablist" aria-label="Acompanhamento de vendas">
         {(
           [
-            ['orders', 'Pedidos recebidos'],
             ['sales', 'Vendas registradas'],
+            ['orders', 'Pedidos recebidos'],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -134,9 +134,9 @@ export function Sales() {
               if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
                 next = key === 'orders' ? 'sales' : 'orders';
               } else if (event.key === 'Home') {
-                next = 'orders';
-              } else if (event.key === 'End') {
                 next = 'sales';
+              } else if (event.key === 'End') {
+                next = 'orders';
               } else {
                 return;
               }

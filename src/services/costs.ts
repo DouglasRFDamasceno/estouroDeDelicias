@@ -1,3 +1,4 @@
+import { searchPattern } from '../domain/search';
 import { requireSupabase } from './supabase';
 import { pageRange } from '../domain/pagination';
 import type { MeasureUnit } from '../domain/costs';
@@ -48,7 +49,7 @@ export async function loadCostRows(
   let query = requireSupabase()
     .from(section === 'materials' ? 'materials' : 'recipe_costs')
     .select(columns, { count: 'exact' });
-  if (name.trim()) query = query.ilike('name', `%${name.trim().replace(/[\\%_]/g, '\\$&')}%`);
+  if (name.trim()) query = query.ilike('name_search', searchPattern(name));
   const result = await query
     .order(sort, { ascending })
     .order('id')

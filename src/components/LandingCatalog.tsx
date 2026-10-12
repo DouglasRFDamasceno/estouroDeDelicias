@@ -10,13 +10,8 @@ import type { LandingOrderItem } from '../domain/landingCatalog';
 import { cleanOrderCustomer, validateOrder } from '../domain/publicOrder';
 import { submitPublicOrder } from '../services/publicOrders';
 import { OrderChallenge } from './OrderChallenge';
+import { normalizeSearch } from '../domain/search';
 import { money } from '../domain/format';
-
-const normalize = (value: string) =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
 
 export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const selectionRef = useRef<HTMLElement>(null);
@@ -71,7 +66,7 @@ export function LandingCatalog({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const [announcement, setAnnouncement] = useState('');
   const visibleFlavors = landingFlavors.filter(
     (flavor) =>
-      normalize(flavor.name).includes(normalize(search.trim())) &&
+      normalizeSearch(flavor.name).includes(normalizeSearch(search.trim())) &&
       (!onlyFavorites || favorites.includes(flavor.name)),
   );
   const count = items.reduce((total, item) => total + item.quantity, 0);

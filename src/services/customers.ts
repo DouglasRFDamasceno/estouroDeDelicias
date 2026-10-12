@@ -1,3 +1,4 @@
+import { searchPattern } from '../domain/search';
 import { requireSupabase } from './supabase';
 import { pageRange } from '../domain/pagination';
 export interface Customer {
@@ -37,8 +38,7 @@ export async function loadCustomers(options: {
   let query = requireSupabase()
     .from('customers')
     .select('id,name,created_at,revision', { count: 'exact' });
-  if (filters.name.trim())
-    query = query.ilike('name', `%${filters.name.trim().replace(/[\\%_]/g, '\\$&')}%`);
+  if (filters.name.trim()) query = query.ilike('name_search', searchPattern(filters.name));
   if (filters.from) query = query.gte('created_at', filters.from + 'T00:00:00Z');
   if (filters.until) {
     const nextDay = new Date(filters.until + 'T00:00:00Z');

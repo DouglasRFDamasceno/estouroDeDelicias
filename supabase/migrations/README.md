@@ -11,3 +11,5 @@ Arquivos futuros seguem `YYYYMMDDHHMMSS_descricao.sql`. Não editar uma migraç�
 `20261011000100_server_session_deadline.sql` deve ser aplicada após as dez migrações anteriores. Acrescenta validação de sessão existente e prazo absoluto de 72 horas ao helper de autorização central, sem exigir plano Pro. Publicar também a função `invite-user` atualizada. Ver [sessões e testes](../../docs/sessions.md). Enquanto migração e função não forem aplicadas remotamente, a proteção publicada não está comprovada.
 
 `20261011000200_pending_orders.sql` cria pedidos pendentes privados, cotas de gravação e tentativa, limpeza e confirmação administrativa idempotente. Requer API Vercel configurada; Turnstile é opcional e está desativado no modo atual. Veja [ativação e limites](../../docs/public-orders.md).
+
+`20261011000400_accent_insensitive_search.sql` adiciona campos calculados para buscas sem acentos em produtos, clientes, insumos, receitas, vendas e pedidos. Aplicar antes de publicar o frontend que usa esses filtros; mantém RLS, contagens e paginação nas consultas originais. Verificação SQL: `supabase/tests/accent_insensitive_search.sql`.

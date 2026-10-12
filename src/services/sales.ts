@@ -1,3 +1,4 @@
+import { searchPattern } from '../domain/search';
 import { requireSupabase } from './supabase';
 import { pageRange } from '../domain/pagination';
 export interface Sale {
@@ -31,13 +32,7 @@ export async function loadSales(
     );
   if (period) query = query.gte('sale_date', period.from).lte('sale_date', period.until);
   if (search.trim())
-    query = query.ilike(
-      'customer',
-      `%${search
-        .trim()
-        .slice(0, 120)
-        .replace(/[\\%_]/g, '\\$&')}%`,
-    );
+    query = query.ilike('customer_search', searchPattern(search.trim().slice(0, 120)));
   const result = await query
     .order(sort, { ascending })
     .order('id')

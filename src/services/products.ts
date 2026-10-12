@@ -1,3 +1,4 @@
+import { searchPattern } from '../domain/search';
 import { requireSupabase } from './supabase';
 import { pageRange } from '../domain/pagination';
 import type { CatalogProduct } from '../domain/catalog';
@@ -26,7 +27,7 @@ export async function loadProducts(options: {
   for (const column of ['name', 'category', 'presentation'] as const) {
     const value = options.filters[column].trim();
     if (value.length > 120) throw new Error('Filtro muito longo.');
-    if (value) query = query.ilike(column, `%${value.replace(/[\\%_]/g, '\\$&')}%`);
+    if (value) query = query.ilike(`${column}_search`, searchPattern(value));
   }
   const result = await query
     .order(options.sort, { ascending: options.ascending })

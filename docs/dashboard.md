@@ -20,7 +20,7 @@ O banco não tem datas de recebimentos individuais. Por isso, o painel não apre
 
 ## Custo e margem estimados
 
-`dashboard_summary` calcula o custo com as quantidades das receitas, conversões g/kg e ml/l, preço e quantidade de referência atuais dos insumos, dividindo pelo rendimento de cada receita. A soma usa `numeric` no PostgreSQL e só é arredondada para centavos depois de ponderar pelas quantidades vendidas, evitando arredondar prematuramente cada unidade.
+`dashboard_summary` consulta `recipe_product_costs` com os preços e quantidades de referência atuais dos insumos. No modo por unidades, divide pelo rendimento de venda da receita. No modo por peso, calcula a proporção entre peso líquido do produto e rendimento da preparação, somando as embalagens de um pacote. Receitas base contribuem com o custo da preparação, sem suas embalagens de venda. A soma usa `numeric` no PostgreSQL e só é arredondada para centavos depois de ponderar pelas quantidades vendidas, evitando arredondar prematuramente cada unidade.
 
 Um item vendido é calculável quando seu produto está vinculado a **exatamente uma receita**, com insumos. Produtos removidos/sem receita ou receitas sem insumos entram em cobertura ausente. Produtos com múltiplas receitas entram em cobertura ambígua: nenhuma receita é escolhida arbitrariamente. O painel mostra quantidades cobertas, ausentes e ambíguas.
 

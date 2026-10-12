@@ -35,6 +35,7 @@ export function EditProduct({
         category: String(data.get('category')),
         presentation: String(data.get('presentation')),
         price: String(data.get('price')),
+        weight: String(data.get('weight') ?? ''),
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Confira os campos');
@@ -54,10 +55,16 @@ export function EditProduct({
         .single();
       if (result.error || !result.data) throw result.error;
       if (active.current) onSaved();
-    } catch {
+    } catch (issue) {
       if (active.current)
         setError(
-          'Não foi possível confirmar a atualização. Confira os campos, sua permissão e se já existe este produto. Feche e atualize a lista para verificar alterações de outra sessão.',
+          issue &&
+            typeof issue === 'object' &&
+            'code' in issue &&
+            issue.code === 'P0001' &&
+            'message' in issue
+            ? String(issue.message)
+            : 'Não foi possível confirmar a atualização. Confira os campos, sua permissão e se já existe este produto. Feche e atualize a lista para verificar alterações de outra sessão.',
         );
     } finally {
       saving.current = false;
@@ -128,6 +135,22 @@ export function EditProduct({
               required
             />
           </label>
+          <label>
+            Peso líquido (g)
+            <input
+              name="weight"
+              inputMode="decimal"
+              defaultValue={
+                product.weight_grams == null ? '' : String(product.weight_grams).replace('.', ',')
+              }
+              placeholder="Ex.: 50, 100 ou 150"
+              aria-describedby="edit-weight-help"
+            />
+          </label>
+          <p id="edit-weight-help" className="fine">
+            Peso da pipoca em cada pacote, sem a embalagem. Necessário para o custo automático por
+            peso.
+          </p>
         </fieldset>
         {error && <p role="alert">{error}</p>}
         <div className="sale-actions">

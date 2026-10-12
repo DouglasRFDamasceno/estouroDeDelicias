@@ -24,3 +24,10 @@ test('rejeita preço ambíguo, negativo, fracionário e campos inválidos', () =
   ])
     assert.throws(() => parseProductDraft({ ...draft, ...fields }));
 });
+test('peso líquido é opcional, explícito e admite até três casas decimais', () => {
+  assert.equal(parseProductDraft({ ...draft, weight: '50' }).weight_grams, 50);
+  assert.equal(parseProductDraft({ ...draft, weight: '100,125' }).weight_grams, 100.125);
+  assert.equal(parseProductDraft({ ...draft, weight: '' }).weight_grams, null);
+  for (const weight of ['0', '-50', '1.000,00', '50g', '1e3', '0,0001', '10000001'])
+    assert.throws(() => parseProductDraft({ ...draft, weight }));
+});

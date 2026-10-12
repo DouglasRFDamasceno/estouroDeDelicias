@@ -5,14 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../auth/AuthProvider';
 import { money } from '../domain/format';
-import {
-  ingredientCost,
-  measureFamily,
-  measureUnits,
-  parseCostPrice,
-  parseQuantity,
-  recipeComponentCost,
-} from '../domain/costs';
+import { measureUnits, parseCostPrice, parseQuantity } from '../domain/costs';
 import type { MeasureUnit } from '../domain/costs';
 import { totalPages } from '../domain/pagination';
 import { requireSupabase } from '../services/supabase';
@@ -20,17 +13,18 @@ import {
   loadCostRows,
   loadRecipeForCopy,
   loadRecipeLines,
-  searchMaterials,
+  loadRecipePresentations,
+  recipeLineCost,
   searchRecipeCategories,
   searchRecipes,
 } from '../services/costs';
 import type {
   CostSection,
   Material,
-  MaterialOption,
   Recipe,
   RecipeLine,
   RecipeOption,
+  RecipePresentation,
 } from '../services/costs';
 import { searchSaleProducts } from '../services/saleOptions';
 import type { ProductOption } from '../services/saleOptions';
@@ -39,6 +33,8 @@ import { SearchSelect } from './SearchSelect';
 import type { SearchOption } from './SearchSelect';
 import { Pagination } from './Pagination';
 import { ConfirmRemove } from './ConfirmRemove';
+import { RecipeLinesEditor } from './RecipeLinesEditor';
+import { RecipePresentations } from './RecipePresentations';
 export function Costs() {
   const { identity, identityLoading } = useAuth();
   const [section, setSection] = useState<CostSection>('recipes');
@@ -116,6 +112,7 @@ function CostList({ section }: { section: CostSection }) {
     [filter, setFilter] = useState(''),
     [category, setCategory] = useState<SearchOption | null>(null),
     [categoryFilter, setCategoryFilter] = useState<string | null>(null),
+    [materialCategory, setMaterialCategory] = useState(''),
     [retry, setRetry] = useState(0),
     [rows, setRows] = useState<(Material | Recipe)[]>([]),
     [total, setTotal] = useState(0),
@@ -184,6 +181,7 @@ function CostList({ section }: { section: CostSection }) {
   const columns = materials
     ? [
         ['name', 'Insumo'],
+        ['category', 'Categoria'],
         ['price_cents', 'Preço de compra'],
       ]
     : [
@@ -219,7 +217,7 @@ function CostList({ section }: { section: CostSection }) {
         onSubmit={(e) => {
           e.preventDefault();
           setFilter(search);
-          setCategoryFilter(category?.id ?? null);
+          setCategoryFilter(materials ? materialCategory : (category?.id ?? null));
           setPage(1);
         }}
       >
@@ -235,6 +233,19 @@ function CostList({ section }: { section: CostSection }) {
             }}
           />
         </label>
+        {materials && (
+          <label>
+            Filtrar por categoria
+            <ClearableInput
+              label="Filtrar por categoria"
+              value={materialCategory}
+              maxLength={80}
+              placeholder="Ex.: Chocolates, Embalagens"
+              onChange={(e) => setMaterialCategory(e.target.value)}
+              onClear={() => setMaterialCategory('')}
+            />
+          </label>
+        )}
         {!materials && (
           <SearchSelect
             label="Filtrar por categoria"
@@ -256,6 +267,7 @@ function CostList({ section }: { section: CostSection }) {
             setSearch('');
             setFilter('');
             setCategory(null);
+            setMaterialCategory('');
             setCategoryFilter(null);
             setPage(1);
           }}
@@ -314,6 +326,7 @@ function CostList({ section }: { section: CostSection }) {
                     <th scope="row">{row.name}</th>
                     {'price_cents' in row ? (
                       <>
+                        <td>{row.category || 'Sem categoria'}</td>
                         <td>{money(row.price_cents)}</td>
                         <td>
                           {row.purchase_quantity} {row.purchase_unit}
@@ -323,12 +336,22 @@ function CostList({ section }: { section: CostSection }) {
                       <>
                         <td>{row.category ?? 'Sem categoria'}</td>
                         <td>{money(row.total_cents)}</td>
-                        <td>{row.product_id ? money(row.unit_cost_cents) : '—'}</td>
                         <td>
-                          {row.product_label}
+                          {row.cost_mode === 'weight' && row.presentation_count > 0
+                            ? 'Por apresentação'
+                            : row.product_id && row.unit_cost_cents !== null
+                              ? money(row.unit_cost_cents)
+                              : '—'}
+                        </td>
+                        <td>
+                          {row.cost_mode === 'weight' && row.presentation_count > 0
+                            ? `${row.presentation_count} apresentações`
+                            : row.product_label}
                           <small className="cost-detail">
                             Rende {row.output_quantity} {row.output_unit}
-                            {row.product_id && ` · ${row.yield_quantity} unidades de venda`}
+                            {row.cost_mode === 'units' &&
+                              row.product_id &&
+                              ` · ${row.yield_quantity} unidades de venda`}
                           </small>
                         </td>
                       </>
@@ -386,7 +409,7 @@ function CostList({ section }: { section: CostSection }) {
         ))}
       {removing && (
         <ConfirmRemove
-          description={`Remover ${removing.name}? ${materials ? 'Insumos usados em receitas precisam ser retirados das receitas antes da exclusão.' : 'Receitas usadas como base precisam ser retiradas das outras receitas antes da exclusão. Os itens desta receita também serão removidos.'}`}
+          description={`Remover ${removing.name}? ${materials ? 'Insumos usados na preparação ou nas embalagens precisam ser retirados das receitas antes da exclusão.' : 'Receitas usadas como base precisam ser retiradas das outras receitas antes da exclusão. Os itens e vínculos de apresentações desta receita também serão removidos.'}`}
           remove={() => removeRecord(section, removing.id, removing.revision)}
           onClose={() => setRemoving(null)}
           onRemoved={() => {
@@ -429,8 +452,12 @@ function MaterialModal({
       const name = String(form.get('name')).trim();
       if (name.length < 2 || name.length > 120)
         throw Error('Informe um nome de 2 a 120 caracteres.');
+      const category = String(form.get('category') ?? '').trim();
+      if (category && (category.length < 2 || category.length > 80))
+        throw Error('Informe uma categoria de 2 a 80 caracteres ou deixe em branco.');
       values = {
         name,
+        category,
         purchase_quantity: parseQuantity(String(form.get('quantity'))),
         purchase_unit: String(form.get('unit')),
         price_cents: parseCostPrice(String(form.get('price'))),
@@ -507,6 +534,18 @@ function MaterialModal({
               placeholder="Chocolate, leite, embalagem…"
             />
           </label>
+          <label>
+            Categoria do insumo (opcional)
+            <input
+              name="category"
+              maxLength={80}
+              defaultValue={material?.category ?? ''}
+              placeholder="Ex.: Chocolates, Frutas, Embalagens"
+            />
+          </label>
+          <p className="fine">
+            Os insumos aparecem agrupados por esta categoria dentro da receita.
+          </p>
           <div className="sale-fields">
             <label>
               Quantidade comprada
@@ -581,7 +620,9 @@ function RecipeModal({
     request = useRef(crypto.randomUUID()),
     payload = useRef<Record<string, unknown> | null>(null);
   const [name, setName] = useState(recipe?.name ?? ''),
-    [product, setProduct] = useState<(SearchOption & { category: string | null }) | null>(
+    [legacyProduct, setLegacyProduct] = useState<
+      (SearchOption & { category: string | null }) | null
+    >(
       recipe?.product_id
         ? { id: recipe.product_id, label: recipe.product_label, category: recipe.category }
         : null,
@@ -595,6 +636,18 @@ function RecipeModal({
     ),
     [outputUnit, setOutputUnit] = useState<MeasureUnit>(recipe?.output_unit ?? 'kg'),
     [notes, setNotes] = useState(recipe?.notes ?? '');
+  const [costMode, setCostMode] = useState<'units' | 'weight'>(recipe?.cost_mode ?? 'weight');
+  const [presentations, setPresentations] = useState<RecipePresentation[]>([]);
+  const product =
+    costMode === 'weight'
+      ? presentations[0]
+        ? {
+            id: presentations[0].product.id,
+            label: `${presentations[0].product.name} · ${presentations[0].product.presentation}`,
+            category: presentations[0].product.category,
+          }
+        : null
+      : legacyProduct;
   const [lines, setLines] = useState<RecipeLine[]>([]),
     [loading, setLoading] = useState(Boolean(recipe)),
     [loadError, setLoadError] = useState(false),
@@ -647,7 +700,9 @@ function RecipeModal({
       if (!active.current) return;
       if (controller.signal.aborted) throw Error('Cópia interrompida');
       setName(`Cópia de ${copied.recipe.name}`.slice(0, 120));
-      setProduct(null);
+      setLegacyProduct(null);
+      setPresentations([]);
+      setCostMode(copied.recipe.cost_mode);
       setBaseCategory(
         copied.recipe.category
           ? { id: copied.recipe.category, label: copied.recipe.category }
@@ -660,7 +715,7 @@ function RecipeModal({
       setLines(copied.lines);
       setError('');
       setCopyStatus(
-        `Receita “${copied.recipe.name}” copiada para o formulário. Revise o nome e escolha o produto, se houver. A original permanece igual.`,
+        `Receita “${copied.recipe.name}” copiada para o formulário. Revise o nome e escolha as apresentações e embalagens da nova receita. A original permanece igual.`,
       );
       if (copyPanel.current) copyPanel.current.open = false;
     } catch {
@@ -679,6 +734,8 @@ function RecipeModal({
     const hasDraft =
       name !== '' ||
       product !== null ||
+      presentations.length > 0 ||
+      costMode !== 'weight' ||
       baseCategory !== null ||
       lines.length > 0 ||
       notes !== '' ||
@@ -695,9 +752,12 @@ function RecipeModal({
     const timer = setTimeout(() => c.abort(), 15000);
     setLoadError(false);
     setLoading(true);
-    loadRecipeLines(recipe.id, c.signal)
-      .then((r) => {
-        if (current) setLines(r);
+    Promise.all([loadRecipeLines(recipe.id, c.signal), loadRecipePresentations(recipe, c.signal)])
+      .then(([r, p]) => {
+        if (current) {
+          setLines(r);
+          setPresentations(p);
+        }
       })
       .catch(() => {
         if (current) setLoadError(true);
@@ -712,27 +772,7 @@ function RecipeModal({
       clearTimeout(timer);
     };
   }, [recipe, retry]);
-  function cost(line: RecipeLine) {
-    try {
-      if (line.kind === 'recipe')
-        return recipeComponentCost(
-          Number(line.recipe.raw_total_cents),
-          Number(line.recipe.output_quantity),
-          line.recipe.output_unit,
-          parseQuantity(line.quantity),
-          line.unit,
-        );
-      return ingredientCost(
-        line.material.price_cents,
-        Number(line.material.purchase_quantity),
-        line.material.purchase_unit,
-        parseQuantity(line.quantity),
-        line.unit,
-      );
-    } catch {
-      return null;
-    }
-  }
+  const cost = recipeLineCost;
   const costs = lines.map(cost);
   const total = costs.reduce<number>((sum, c) => sum + (c ?? 0), 0);
   const valid = lines.length > 0 && costs.every((c) => c !== null);
@@ -745,20 +785,50 @@ function RecipeModal({
         if (!valid) throw Error('Adicione insumos ou receitas base e confira as quantidades.');
         if (name.trim().length < 2) throw Error('Informe o nome da receita.');
         if (
+          costMode === 'units' &&
           product &&
           (!/^\d{1,7}$/.test(yieldQuantity) ||
             Number(yieldQuantity) < 1 ||
             Number(yieldQuantity) > 1000000)
         )
           throw Error('Informe o rendimento de 1 a 1.000.000 unidades.');
+        if (
+          costMode === 'weight' &&
+          presentations.length &&
+          measureUnits.includes(outputUnit) &&
+          !['g', 'kg'].includes(outputUnit)
+        )
+          throw Error('Informe o rendimento da preparação em g ou kg para calcular por peso.');
+        if (
+          costMode === 'weight' &&
+          presentations.some(
+            (p) =>
+              !p.product.weight_grams ||
+              p.packaging.some((l) => l.kind !== 'material' || recipeLineCost(l) === null),
+          )
+        )
+          throw Error('Confira os pesos e as quantidades de embalagem.');
         payload.current = {
+          p_cost_mode: costMode,
+          p_presentations:
+            costMode === 'weight'
+              ? presentations.map((p) => ({
+                  product_id: p.product.id,
+                  packaging: p.packaging.map((l) => ({
+                    material_id: l.kind === 'material' ? l.material.id : null,
+                    quantity: parseQuantity(l.quantity),
+                    unit: l.unit,
+                  })),
+                }))
+              : [],
           p_id: id.current,
           p_revision: recipe?.revision ?? 0,
           p_request_id: request.current,
           p_name: name.trim(),
           p_product_id: product?.id ?? null,
           p_category: product ? null : (baseCategory?.id ?? null),
-          p_yield_quantity: product ? Number(yieldQuantity) : (recipe?.yield_quantity ?? 1),
+          p_yield_quantity:
+            costMode === 'units' && product ? Number(yieldQuantity) : (recipe?.yield_quantity ?? 1),
           p_output_quantity: parseQuantity(outputQuantity),
           p_output_unit: outputUnit,
           p_notes: notes.trim(),
@@ -863,8 +933,8 @@ function RecipeModal({
                 Começar copiando outra receita
               </summary>
               <p className="fine">
-                Copia insumos, receitas base, categoria, quantidades, rendimentos e observações.
-                Escolha o nome e o produto da nova receita antes de salvar.
+                Copia insumos, receitas base, categoria, quantidades, rendimentos e observações. As
+                apresentações e suas embalagens ficam em branco para configurar a nova receita.
               </p>
               <SearchSelect
                 label="Receita para copiar"
@@ -978,25 +1048,52 @@ function RecipeModal({
               Quantidade pronta que esta receita produz. Exemplo: a caramelizada rende 1 kg; usar
               300 g dela na receita de morango inclui 30% do custo da caramelizada.
             </p>
-            <SearchSelect
-              label="Produto da receita (opcional)"
-              value={product}
-              load={searchSaleProducts}
-              onSelect={(option) => {
-                if (option) {
-                  setProduct({ ...option, category: (option as ProductOption).product.category });
-                } else {
-                  if (product?.category)
-                    setBaseCategory({ id: product.category, label: product.category });
-                  setProduct(null);
-                }
-              }}
-              disabled={busy || uncertain}
-              placeholder="Buscar produto"
-            />
-            <p className="fine">
-              Para uma receita usada apenas como base, deixe o produto em branco.
-            </p>
+            <label>
+              Cálculo do custo
+              <select
+                value={costMode}
+                onChange={(e) => setCostMode(e.target.value as 'units' | 'weight')}
+              >
+                <option value="weight">Por peso · várias apresentações</option>
+                <option value="units">Por unidades de venda · uma apresentação</option>
+              </select>
+            </label>
+            {costMode === 'units' && (
+              <>
+                <SearchSelect
+                  label="Produto da receita (opcional)"
+                  value={product}
+                  load={searchSaleProducts}
+                  onSelect={(option) => {
+                    if (option) {
+                      setPresentations([
+                        { product: (option as ProductOption).product, packaging: [] },
+                      ]);
+                      setLegacyProduct({
+                        ...option,
+                        category: (option as ProductOption).product.category,
+                      });
+                    } else {
+                      if (product?.category)
+                        setBaseCategory({ id: product.category, label: product.category });
+                      setLegacyProduct(null);
+                      setPresentations([]);
+                    }
+                  }}
+                  disabled={busy || uncertain}
+                  placeholder="Buscar produto"
+                />
+                <p className="fine">
+                  Para uma receita usada apenas como base, deixe o produto em branco.
+                </p>
+                {presentations.some((p) => p.packaging.length > 0) || presentations.length > 1 ? (
+                  <p role="status" className="fine">
+                    Ao salvar por unidades, as apresentações e embalagens do cálculo por peso serão
+                    removidas. Neste modo, inclua as embalagens nos insumos da receita.
+                  </p>
+                ) : null}
+              </>
+            )}
             {product ? (
               <>
                 <label>
@@ -1035,7 +1132,7 @@ function RecipeModal({
                   ou selecionar outro produto.
                 </p>
               )}
-            {product && (
+            {costMode === 'units' && product && (
               <>
                 <label>
                   Rendimento (unidades de venda)
@@ -1054,149 +1151,44 @@ function RecipeModal({
                 </p>
               </>
             )}
-            <SearchSelect
-              label="Adicionar insumo"
-              value={null}
-              load={searchMaterials}
-              placeholder="Buscar ingrediente ou embalagem"
-              disabled={busy || uncertain || lines.length >= 50}
-              onSelect={(option) => {
-                if (!option) return;
-                const m = (option as MaterialOption).material;
-                if (lines.some((l) => l.kind === 'material' && l.material.id === m.id)) {
-                  setError('Insumo já adicionado. Ajuste sua quantidade abaixo.');
-                  return;
-                }
-                setError('');
-                setLines((v) => [
-                  ...v,
-                  {
-                    kind: 'material',
-                    material: m,
-                    quantity: '',
-                    unit:
-                      m.purchase_unit === 'kg'
-                        ? 'g'
-                        : m.purchase_unit === 'l'
-                          ? 'ml'
-                          : m.purchase_unit,
-                  },
-                ]);
-              }}
+            <h3>Insumos da preparação</h3>
+            {costMode === 'weight' && (
+              <p className="fine">
+                Aqui entram os ingredientes da receita pronta. Cadastre saco, etiqueta e laço em
+                Embalagens por pacote, abaixo, na apresentação correspondente, para evitar contar
+                duas vezes.
+              </p>
+            )}
+            <RecipeLinesEditor
+              lines={lines}
+              onChange={setLines}
+              disabled={busy || uncertain || copying || Boolean(pendingCopy)}
+              loadBases={loadBases}
             />
-            <SearchSelect
-              label="Adicionar receita base"
-              value={null}
-              load={loadBases}
-              placeholder="Buscar receita já cadastrada"
-              disabled={busy || uncertain || lines.length >= 50}
-              onSelect={(option) => {
-                if (!option) return;
-                const base = (option as RecipeOption).recipe;
-                if (lines.some((l) => l.kind === 'recipe' && l.recipe.id === base.id)) {
-                  setError('Receita base já adicionada. Ajuste sua quantidade abaixo.');
-                  return;
-                }
-                setError('');
-                setLines((v) => [
-                  ...v,
-                  {
-                    kind: 'recipe',
-                    recipe: base,
-                    quantity: '',
-                    unit:
-                      base.output_unit === 'kg'
-                        ? 'g'
-                        : base.output_unit === 'l'
-                          ? 'ml'
-                          : base.output_unit,
-                  },
-                ]);
-              }}
-            />
-            <ul className="recipe-lines">
-              {lines.map((l, index) => {
-                const source = l.kind === 'material' ? l.material : l.recipe;
-                const sourceQuantity =
-                  l.kind === 'material' ? l.material.purchase_quantity : l.recipe.output_quantity;
-                const sourceUnit =
-                  l.kind === 'material' ? l.material.purchase_unit : l.recipe.output_unit;
-                const sourceCost =
-                  l.kind === 'material' ? l.material.price_cents : l.recipe.raw_total_cents;
-                return (
-                  <li key={`${l.kind}:${source.id}`}>
-                    <strong>
-                      {source.name}
-                      {l.kind === 'recipe' && ' · Receita base'}
-                      <small>
-                        {sourceQuantity} {sourceUnit} por {money(sourceCost)}
-                      </small>
-                    </strong>
-                    <div className="sale-fields">
-                      <label>
-                        Quantidade usada de {source.name}
-                        <input
-                          required
-                          inputMode="decimal"
-                          value={l.quantity}
-                          placeholder="200"
-                          onChange={(e) =>
-                            setLines((v) =>
-                              v.map((r, i) =>
-                                i === index ? { ...r, quantity: e.target.value } : r,
-                              ),
-                            )
-                          }
-                        />
-                      </label>
-                      <label>
-                        Unidade de {source.name}
-                        <select
-                          value={l.unit}
-                          onChange={(e) =>
-                            setLines((v) =>
-                              v.map((r, i) =>
-                                i === index ? { ...r, unit: e.target.value as MeasureUnit } : r,
-                              ),
-                            )
-                          }
-                        >
-                          {measureUnits
-                            .filter((u) => measureFamily(u) === measureFamily(sourceUnit))
-                            .map((u) => (
-                              <option key={u} value={u}>
-                                {u}
-                              </option>
-                            ))}
-                        </select>
-                      </label>
-                    </div>
-                    <div className="recipe-line-total">
-                      <span>
-                        {cost(l) === null
-                          ? 'Informe uma quantidade válida'
-                          : `Custo: ${money(cost(l)!)}`}
-                      </span>
-                      <ActionIconButton
-                        action="remove"
-                        label={`Remover ${source.name} da receita`}
-                        onClick={() => setLines((v) => v.filter((_, i) => i !== index))}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
             <p className="sale-sum">
               Custo da receita <strong>{valid ? money(total) : '—'}</strong>
             </p>
-            {product && (
+            {costMode === 'units' && product && (
               <p className="sale-sum">
                 Custo por unidade{' '}
                 <strong>
                   {valid && Number(yieldQuantity) > 0 ? money(total / Number(yieldQuantity)) : '—'}
                 </strong>
               </p>
+            )}
+            {costMode === 'weight' && (
+              <RecipePresentations
+                value={presentations}
+                onChange={(p) => {
+                  if (!p.length && product?.category)
+                    setBaseCategory({ id: product.category, label: product.category });
+                  setPresentations(p);
+                }}
+                total={valid ? total : null}
+                outputQuantity={outputQuantity}
+                outputUnit={outputUnit}
+                disabled={busy || uncertain || copying || Boolean(pendingCopy)}
+              />
             )}
             <p className="fine">
               Prévia com os preços consultados. Ao salvar, o banco calcula com os preços atuais.

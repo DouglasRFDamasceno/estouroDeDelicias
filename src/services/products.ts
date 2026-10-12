@@ -23,7 +23,7 @@ export async function loadProducts(options: {
   if (!productSortColumns.includes(options.sort)) throw new Error('Ordenação inválida.');
   let query = requireSupabase()
     .from('products')
-    .select('id,name,category,presentation,price_cents,revision', { count: 'exact' });
+    .select('id,name,category,presentation,price_cents,revision,weight_grams', { count: 'exact' });
   for (const column of ['name', 'category', 'presentation'] as const) {
     const value = options.filters[column].trim();
     if (value.length > 120) throw new Error('Filtro muito longo.');

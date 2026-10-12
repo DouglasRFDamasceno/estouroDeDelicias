@@ -162,6 +162,7 @@ export function Products() {
         category: String(fields.get('category') ?? ''),
         presentation: String(fields.get('presentation') ?? ''),
         price: String(fields.get('price') ?? ''),
+        weight: String(fields.get('weight') ?? ''),
       });
     } catch (issue) {
       setMessage(issue instanceof Error ? issue.message : 'Confira os campos.');
@@ -370,6 +371,17 @@ export function Products() {
                   aria-describedby="product-price-help"
                 />
                 <p id="product-price-help">Use vírgula para centavos, sem separador de milhares.</p>
+                <label htmlFor="product-weight">Peso líquido (g)</label>
+                <input
+                  id="product-weight"
+                  name="weight"
+                  inputMode="decimal"
+                  placeholder="Ex.: 50, 100 ou 150"
+                  aria-describedby="product-weight-help"
+                />
+                <p id="product-weight-help">
+                  Peso da pipoca sem a embalagem, usado no cálculo automático da receita.
+                </p>
                 <div className="product-actions">
                   <button className="g-button" type="submit">
                     {busy ? 'Salvando…' : 'Salvar produto'}
@@ -431,7 +443,14 @@ export function Products() {
                         <tr key={product.id}>
                           <th scope="row">{product.name}</th>
                           <td>{product.category}</td>
-                          <td>{product.presentation}</td>
+                          <td>
+                            {product.presentation}
+                            <small className="cost-detail">
+                              {product.weight_grams != null
+                                ? `${product.weight_grams} g líquidos`
+                                : 'Peso não informado'}
+                            </small>
+                          </td>
                           <td className="product-price-cell">{money(product.price_cents)}</td>
                           {canManage && (
                             <td className="table-actions">

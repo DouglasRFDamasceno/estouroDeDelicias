@@ -4,9 +4,12 @@ import { pageRange } from '../domain/pagination';
 import type { MeasureUnit } from '../domain/costs';
 import { money } from '../domain/format';
 import type { SearchOption } from '../components/SearchSelect';
+import type { CatalogProduct } from '../domain/catalog';
+import { ingredientCost, parseQuantity, recipeComponentCost } from '../domain/costs';
 export interface Material {
   id: string;
   name: string;
+  category: string;
   purchase_quantity: number;
   purchase_unit: MeasureUnit;
   price_cents: number;
@@ -19,13 +22,15 @@ export interface Recipe {
   product_label: string;
   category: string | null;
   base_category: string | null;
+  cost_mode: 'units' | 'weight';
+  presentation_count: number;
   yield_quantity: number;
   output_quantity: number;
   output_unit: MeasureUnit;
   notes: string;
   revision: number;
   total_cents: number;
-  unit_cost_cents: number;
+  unit_cost_cents: number | null;
   raw_total_cents: number;
 }
 export type RecipeLine = (
@@ -35,8 +40,12 @@ export type RecipeLine = (
   unit: MeasureUnit;
 };
 export type CostSection = 'materials' | 'recipes';
+export interface RecipePresentation {
+  product: CatalogProduct;
+  packaging: RecipeLine[];
+}
 const recipeColumns =
-  'id,name,product_id,product_label,category,base_category,yield_quantity,output_quantity,output_unit,notes,revision,total_cents,unit_cost_cents,raw_total_cents';
+  'id,name,product_id,product_label,category,base_category,cost_mode,presentation_count,yield_quantity,output_quantity,output_unit,notes,revision,total_cents,unit_cost_cents,raw_total_cents';
 export async function loadCostRows(
   section: CostSection,
   page: number,
@@ -50,19 +59,21 @@ export async function loadCostRows(
   const { from, to } = pageRange(page, pageSize);
   const allowed =
     section === 'materials'
-      ? ['name', 'price_cents']
+      ? ['name', 'category', 'price_cents']
       : ['name', 'category', 'total_cents', 'unit_cost_cents'];
   if (!allowed.includes(sort) || name.length > 120 || (category?.length ?? 0) > 80)
     throw Error('Consulta inválida');
   const columns =
     section === 'materials'
-      ? 'id,name,purchase_quantity,purchase_unit,price_cents,revision'
+      ? 'id,name,category,purchase_quantity,purchase_unit,price_cents,revision'
       : recipeColumns;
   let query = requireSupabase()
     .from(section === 'materials' ? 'materials' : 'recipe_costs')
     .select(columns, { count: 'exact' });
   if (name.trim()) query = query.ilike('name_search', searchPattern(name));
   if (section === 'recipes' && category !== null) query = query.eq('category', category);
+  if (section === 'materials' && category?.trim())
+    query = query.ilike('category_search', searchPattern(category));
   const result = await query
     .order(sort, { ascending })
     .order('id')
@@ -95,7 +106,7 @@ export async function searchMaterials(search: string, page: number, signal: Abor
     rows: (result.rows as Material[]).map((m) => ({
       id: m.id,
       label: m.name,
-      description: `${m.purchase_quantity} ${m.purchase_unit} por ${money(m.price_cents)}`,
+      description: `${m.category || 'Sem categoria'} · ${m.purchase_quantity} ${m.purchase_unit} por ${money(m.price_cents)}`,
       material: m,
     })),
     total: result.total,
@@ -105,7 +116,7 @@ export async function loadRecipeLines(id: string, signal: AbortSignal): Promise<
   const result = await requireSupabase()
     .from('recipe_items')
     .select(
-      'quantity,unit,component_recipe_id,material:materials(id,name,purchase_quantity,purchase_unit,price_cents,revision)',
+      'quantity,unit,component_recipe_id,material:materials(id,name,category,purchase_quantity,purchase_unit,price_cents,revision)',
     )
     .eq('recipe_id', id)
     .order('id')
@@ -138,6 +149,73 @@ export async function loadRecipeLines(id: string, signal: AbortSignal): Promise<
     if (!base) throw Error('Componente da receita indisponível');
     return { ...values, kind: 'recipe', recipe: base };
   });
+}
+export function recipeLineCost(line: RecipeLine) {
+  try {
+    const quantity = parseQuantity(line.quantity);
+    return line.kind === 'material'
+      ? ingredientCost(
+          line.material.price_cents,
+          Number(line.material.purchase_quantity),
+          line.material.purchase_unit,
+          quantity,
+          line.unit,
+        )
+      : recipeComponentCost(
+          Number(line.recipe.raw_total_cents),
+          Number(line.recipe.output_quantity),
+          line.recipe.output_unit,
+          quantity,
+          line.unit,
+        );
+  } catch {
+    return null;
+  }
+}
+export async function loadRecipePresentations(
+  recipe: Recipe,
+  signal: AbortSignal,
+): Promise<RecipePresentation[]> {
+  if (recipe.cost_mode === 'units') {
+    if (!recipe.product_id) return [];
+    const r = await requireSupabase()
+      .from('products')
+      .select('id,name,category,presentation,price_cents,revision,weight_grams')
+      .eq('id', recipe.product_id)
+      .abortSignal(signal)
+      .single();
+    if (r.error) throw r.error;
+    return [{ product: r.data as CatalogProduct, packaging: [] }];
+  }
+  const r = await requireSupabase()
+    .from('recipe_presentations')
+    .select(
+      'product:products(id,name,category,presentation,price_cents,revision,weight_grams),packaging:recipe_packaging(quantity,unit,material:materials(id,name,category,purchase_quantity,purchase_unit,price_cents,revision))',
+      { count: 'exact' },
+    )
+    .eq('recipe_id', recipe.id)
+    .order('position')
+    .order('product_id')
+    .range(0, 49)
+    .order('material_id', { referencedTable: 'packaging' })
+    .limit(10, { referencedTable: 'packaging' })
+    .abortSignal(signal);
+  if (r.error || r.count === null || r.count > 50)
+    throw r.error ?? Error('Apresentações indisponíveis');
+  return (
+    r.data as unknown as {
+      product: CatalogProduct;
+      packaging: { material: Material; quantity: number; unit: MeasureUnit }[];
+    }[]
+  ).map((row) => ({
+    product: row.product,
+    packaging: row.packaging.map((p) => ({
+      kind: 'material',
+      material: p.material,
+      quantity: String(p.quantity).replace('.', ','),
+      unit: p.unit,
+    })),
+  }));
 }
 export async function loadRecipeForCopy(id: string, signal: AbortSignal) {
   const [result, lines] = await Promise.all([

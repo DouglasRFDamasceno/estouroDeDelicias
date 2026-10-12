@@ -555,3 +555,64 @@ button.action-icon-button:disabled {
   opacity: 0.5;
   cursor: default;
 }
+
+.recipe-presentations,
+.recipe-ingredient-group {
+  margin-block: 24px;
+}
+.recipe-ingredient-group > h4,
+.recipe-ingredient-group > h5 {
+  color: var(--ui-ink);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ui-border);
+  font-size: 15px;
+}
+.recipe-presentation {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  padding: 16px;
+  margin-top: 16px;
+  min-width: 0;
+}
+.recipe-presentation .panel-heading {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.recipe-presentation .panel-heading > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.recipe-presentation h4,
+.recipe-presentation .panel-heading p {
+  margin: 0 0 6px;
+}
+.recipe-packaging-details > summary {
+  cursor: pointer;
+  color: var(--ui-ink);
+  padding-block: 12px;
+  font-weight: 600;
+}
+.recipe-portion-cost {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ui-border);
+  margin: 12px 0 0;
+}
+.recipe-portion-cost > div {
+  flex: 1 1 110px;
+}
+.recipe-portion-cost dt {
+  font-size: 13px;
+  color: var(--ui-muted);
+}
+.recipe-portion-cost dd {
+  margin: 6px 0 0;
+  font-weight: 700;
+  color: var(--ui-ink);
+}
